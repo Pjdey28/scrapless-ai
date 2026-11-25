@@ -1,0 +1,1 @@
+-- No fake history is seeded. The sample order is served by the FastAPI demo endpoint.
