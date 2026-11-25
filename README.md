@@ -6,6 +6,25 @@ ScrapLess AI is a manufacturing-planning application for rectangular 2D sheet cu
 
 > **Scope and limitations:** FFD and MaxRects are deterministic heuristics, not global optimizers. MaxRects does not establish guillotine-cut feasibility. Unused area is a geometric proxy, not a judgment about whether offcuts can be reused. Scrap-risk ML is trained and evaluated only on reproducible synthetic data. Computer-vision dimensions are pixels unless an external calibration is supplied.
 
+### Explore the live application
+
+Visit the [ScrapLess AI website](https://scrapless-ai.vercel.app/). The landing page's **Explore workspace** link opens the dashboard. The deployed dashboard currently redirects visitors who are not signed in to the login page; if that happens, the live deployment is not presently available as an anonymous judge demo. An account requires Supabase Auth. Do not treat the steps below as proof that the live deployment is open to unauthenticated visitors.
+
+### Explore the Demo Workspace
+
+After you reach the dashboard:
+
+1. Click **Load Demo Workspace**, review the confirmation, then click **Confirm and load**. The app loads 25 fictional Apex Industrial Components orders and runs both FFD and MaxRects BSSF on each eligible order. Wait for the completion report; it shows created/reused orders, validated result pairs, results generated, and any failures.
+2. Click **Production orders** in the sidebar to browse the saved orders. Choose one to see its parts, material, sheet configuration, and order details.
+3. Click **Cutting optimizer**, select an order from **Or choose a saved order**, then click **Run optimization**. Review the FFD and MaxRects layouts, compare the metrics, and inspect placement details or download a placements CSV.
+4. Click **Analytics** to view utilization, algorithm comparisons, material consumption, and filtered/exportable results. Demo dates are labelled as simulated; optimization results are computed by the real algorithms.
+5. Click **Run history** to review previous results, open a result, compare compatible layouts, or download a JSON/CSV report.
+6. Click **Scrap-risk insights** to explore the advisory risk analysis and order/stock checks. Its synthetic score is not a calibrated real-world probability.
+7. Click **Image detection**, then **Use included sample image** and **Detect rectangular regions** to try the included Vision sample. The returned rectangles are OpenCV candidates in pixels, not calibrated part dimensions.
+8. **Reset demo data** on the dashboard or Settings removes only records marked as belonging to this demo dataset.
+
+The loader is idempotent: running it again reuses demo orders and valid saved FFD/MaxRects pairs instead of duplicating them. In development demo mode, orders persist in browser local storage while computed optimization history is held in bounded backend memory. In authenticated mode, the signed-in user's Supabase account and owner-scoped RLS are used. Simulated order/history dates are labelled; computed metrics are not fabricated.
+
 ## Features
 
 - Next.js dashboard for orders, optimization, analytics, risk signals, vision, history, and settings.
@@ -141,10 +160,6 @@ $env:LOG_LEVEL = "INFO"
 6. Manually apply [supabase/migrations/202611260001_demo_workspace_metadata.sql](supabase/migrations/202611260001_demo_workspace_metadata.sql) after the initial schema if using Demo Workspace in authenticated mode. Restart local services after changing environment variables.
 
 The initial migration creates `production_orders` and `optimization_runs`, enables RLS, and checks `auth.uid() = user_id`. For Demo Workspace metadata and safe demo-only reset, also manually apply `supabase/migrations/202611260001_demo_workspace_metadata.sql` after the initial migration. This adds nullable dataset markers and production-order metadata; it does not alter RLS or insert data. Do not execute migrations through the application.
-
-## Demo Workspace, CSV, and Vision sample
-
-Use the **Load Demo Workspace** action on the dashboard or Settings to insert 25 deterministic fictional production orders and run the existing FFD and MaxRects BSSF algorithms. Both layouts are validated by the existing geometry validator. The loader is idempotent, reports progress/failures, and offers reset scoped to the dataset marker only. In development mode orders persist in browser local storage while computed optimization results remain in bounded backend memory; authenticated mode uses the signed-in user's Supabase account and owner-scoped RLS. Simulated order/history dates are labelled; computed metrics are not fabricated.
 
 See [docs/demo-workspace.md](docs/demo-workspace.md) for mode differences, manual migration, dataset statistics, reset behavior, CSV-import steps, Vision sample usage, read-only Supabase verification, and limitations.
 
