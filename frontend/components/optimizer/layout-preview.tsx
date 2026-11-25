@@ -2,7 +2,7 @@
 
 import type { AlgorithmResult } from "@/types/api";
 
-const colors = ["#d9ece2", "#e7e8f6", "#f7e9d5", "#e5edf1", "#f3dfe0", "#dceef0"];
+const colors = ["#dce8c5", "#e4e6d9", "#e8d9ba", "#d6e2df", "#e3d8d1", "#dfe5c9"];
 
 export function LayoutPreview({ result }: { result: AlgorithmResult }) {
   const { sheet_config: sheet, placements } = result;
@@ -27,7 +27,13 @@ export function LayoutPreview({ result }: { result: AlgorithmResult }) {
               viewBox={`0 0 ${sheet.width} ${sheet.length}`}
               preserveAspectRatio="xMidYMid meet"
             >
-              <rect x="0" y="0" width={sheet.width} height={sheet.length} fill="#f7f9f8" stroke="#71827c" strokeWidth="2" />
+              <title>{`Validated cutting plan, ${sheet.width} by ${sheet.length} stock units`}</title>
+              <defs>
+                <pattern id={`sheet-grid-${sheetIndex}`} width="25" height="25" patternUnits="userSpaceOnUse">
+                  <path d="M 25 0 L 0 0 0 25" fill="none" stroke="#e4e5dc" strokeWidth="0.7" />
+                </pattern>
+              </defs>
+              <rect x="0" y="0" width={sheet.width} height={sheet.length} fill={`url(#sheet-grid-${sheetIndex})`} stroke="#68745a" strokeWidth="2" />
               {sheetParts.map((part, index) => {
                 const y = sheet.length - part.y - part.placed_width;
                 return (
@@ -38,7 +44,7 @@ export function LayoutPreview({ result }: { result: AlgorithmResult }) {
                       width={part.placed_length}
                       height={part.placed_width}
                       fill={colors[index % colors.length]}
-                      stroke="#537464"
+                      stroke="#64745a"
                       strokeWidth="1.5"
                     />
                     <text
@@ -46,16 +52,29 @@ export function LayoutPreview({ result }: { result: AlgorithmResult }) {
                       y={y + part.placed_width / 2}
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      fontSize={Math.max(14, Math.min(42, Math.min(part.placed_length, part.placed_width) / 5))}
-                      fill="#23392f"
+                      fontSize={Math.max(14, Math.min(48, Math.min(part.placed_length, part.placed_width) / 4))}
+                      fontWeight="650"
+                      fill="#303a2b"
                     >
                       {part.part_id}
                     </text>
+                    {part.rotated && (
+                      <text
+                        x={part.x + part.placed_length - Math.min(part.placed_length, part.placed_width) * 0.1}
+                        y={y + Math.min(part.placed_length, part.placed_width) * 0.13}
+                        textAnchor="end"
+                        fontSize={Math.max(10, Math.min(20, Math.min(part.placed_length, part.placed_width) / 7))}
+                        fontWeight="700"
+                        fill="#526626"
+                      >
+                        ↻
+                      </text>
+                    )}
                   </g>
                 );
               })}
             </svg>
-            <div className="layout-legend">Parts shown at physical dimensions. Coordinates use the lower-left sheet origin.</div>
+            <div className="layout-legend">Parts shown at physical dimensions. Coordinates use the lower-left sheet origin. ↻ indicates a 90° rotation.</div>
           </div>
         );
       })}

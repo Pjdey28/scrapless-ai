@@ -173,12 +173,12 @@ export default function OrdersPage() {
               {fields.map((field, index) => (
                 <div key={field.id} className="card" style={{ padding: 10, boxShadow: "none" }}>
                   <div className="field-grid">
-                    <div className="field"><label htmlFor={`parts.${index}.part_id`}>Part ID</label><input className="input" {...register(`parts.${index}.part_id`)} /></div>
-                    <div className="field"><label htmlFor={`parts.${index}.length`}>Length</label><input className="input" type="number" step="any" min="0" {...register(`parts.${index}.length`)} />{errors.parts?.[index]?.length && <span className="field-error">{errors.parts[index]?.length?.message}</span>}</div>
-                    <div className="field"><label htmlFor={`parts.${index}.width`}>Width</label><input className="input" type="number" step="any" min="0" {...register(`parts.${index}.width`)} />{errors.parts?.[index]?.width && <span className="field-error">{errors.parts[index]?.width?.message}</span>}</div>
-                    <div className="field"><label htmlFor={`parts.${index}.quantity`}>Quantity</label><input className="input" type="number" step="1" min="1" {...register(`parts.${index}.quantity`)} />{errors.parts?.[index]?.quantity && <span className="field-error">{errors.parts[index]?.quantity?.message}</span>}</div>
-                    <div className="field"><label htmlFor={`parts.${index}.material`}>Material (optional)</label><input className="input" {...register(`parts.${index}.material`)} /></div>
-                    <div className="field"><label htmlFor={`parts.${index}.description`}>Description</label><input className="input" {...register(`parts.${index}.description`)} /></div>
+                    <div className="field"><label htmlFor={`parts.${index}.part_id`}>Part ID</label><input id={`parts.${index}.part_id`} className="input" {...register(`parts.${index}.part_id`)} /></div>
+                    <div className="field"><label htmlFor={`parts.${index}.length`}>Length</label><input id={`parts.${index}.length`} className="input" type="number" step="any" min="0" {...register(`parts.${index}.length`)} />{errors.parts?.[index]?.length && <span className="field-error">{errors.parts[index]?.length?.message}</span>}</div>
+                    <div className="field"><label htmlFor={`parts.${index}.width`}>Width</label><input id={`parts.${index}.width`} className="input" type="number" step="any" min="0" {...register(`parts.${index}.width`)} />{errors.parts?.[index]?.width && <span className="field-error">{errors.parts[index]?.width?.message}</span>}</div>
+                    <div className="field"><label htmlFor={`parts.${index}.quantity`}>Quantity</label><input id={`parts.${index}.quantity`} className="input" type="number" step="1" min="1" {...register(`parts.${index}.quantity`)} />{errors.parts?.[index]?.quantity && <span className="field-error">{errors.parts[index]?.quantity?.message}</span>}</div>
+                    <div className="field"><label htmlFor={`parts.${index}.material`}>Material (optional)</label><input id={`parts.${index}.material`} className="input" {...register(`parts.${index}.material`)} /></div>
+                    <div className="field"><label htmlFor={`parts.${index}.description`}>Description</label><input id={`parts.${index}.description`} className="input" {...register(`parts.${index}.description`)} /></div>
                   </div>
                   {fields.length > 1 && <button type="button" className="btn btn-quiet" style={{ marginTop: 6 }} onClick={() => remove(index)}><Trash2 size={12} /> Remove part</button>}
                 </div>
@@ -217,7 +217,7 @@ export default function OrdersPage() {
               <thead><tr><th>Order</th><th>Part types</th><th>Part instances</th><th>Material</th><th>Actions</th></tr></thead>
               <tbody>{visibleOrders.map((order) => (
                 <tr key={order.order_id}>
-                  <td><strong>{order.name}</strong><br /><span style={{ color: "#89959a", fontSize: 8 }}>{order.order_id}</span></td>
+                  <td><strong>{order.name}</strong><br /><span className="table-meta">{order.order_id}</span></td>
                   <td>{order.parts.length}</td>
                   <td>{order.parts.reduce((sum, part) => sum + part.quantity, 0)}</td>
                   <td>{[...new Set(order.parts.map((part) => part.material).filter(Boolean))].join(", ") || "—"}</td>

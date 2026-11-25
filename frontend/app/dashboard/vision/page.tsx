@@ -22,21 +22,26 @@ export default function VisionPage() {
   }, [preview]);
 
   function chooseFile(selected?: File) {
-    setFile(selected ?? null);
     setResult(null);
     setError("");
     if (!selected) {
+      setFile(null);
       setPreview("");
       return;
     }
     if (!selected.type.startsWith("image/")) {
+      setFile(null);
+      setPreview("");
       setError("Choose an image file.");
       return;
     }
     if (selected.size > 8 * 1024 * 1024) {
+      setFile(null);
+      setPreview("");
       setError("Image exceeds the 8 MB upload limit.");
       return;
     }
+    setFile(selected);
     setPreview(URL.createObjectURL(selected));
   }
 

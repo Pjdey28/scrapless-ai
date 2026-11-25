@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertTriangle, ArrowDownToLine, FileUp, LoaderCircle, Play, Sheet, Sparkles } from "lucide-react";
+import { AlertTriangle, ArrowDownToLine, FileUp, LoaderCircle, Play, Scissors, Sheet, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -217,7 +217,17 @@ export default function OptimizePage() {
         <section className="card" aria-live="polite">
           <div className="card-heading"><div><h2>Analysis results</h2><p>Physical area metrics · Reserved spacing is not subtracted twice</p></div>{result && <span className={`status-chip ${activeResult?.validation.valid ? "" : "invalid-chip"}`}>{activeResult?.validation.valid ? "Validated" : "Invalid"}</span>}</div>
           {!result ? (
-            <div className="empty"><div className="empty-icon"><Sheet size={20} /></div><h3>Your comparison will appear here</h3><p>Choose an order and stock configuration, then run both algorithms to see actual placements and computed metrics.</p></div>
+            busy ? (
+              <div className="optimization-loading" role="status" aria-busy="true">
+                <div className="loading-mark"><Scissors size={23} /></div>
+                <h3>Comparing cutting strategies</h3>
+                <p>Running FFD and MaxRects against the selected order and stock constraints. Results appear after geometry validation.</p>
+                <div className="loading-track"><span /></div>
+                <div className="loading-caption">Packing parts · Validating placements · Calculating material use</div>
+              </div>
+            ) : (
+              <div className="empty"><div className="empty-icon"><Sheet size={20} /></div><h3>Your comparison will appear here</h3><p>Choose an order and stock configuration, then run both algorithms to see actual placements and computed metrics.</p></div>
+            )
           ) : (
             <>
               {result.baseline.validation.valid && result.optimized.validation.valid && (
@@ -268,6 +278,26 @@ export default function OptimizePage() {
                     <div className="metric-mini"><span>Runtime</span><strong>{metric(activeResult.runtime_ms, 2)} ms</strong></div>
                   </div>
                   <LayoutPreview result={activeResult} />
+                  {activeResult.placements.length > 0 && (
+                    <details className="placement-details">
+                      <summary>Part placement details ({activeResult.placements.length})</summary>
+                      <div className="table-wrap">
+                        <table className="data-table">
+                          <thead><tr><th>Sheet</th><th>Part / instance</th><th>Origin X, Y</th><th>Placed size</th><th>Orientation</th></tr></thead>
+                          <tbody>{activeResult.placements.slice(0, 100).map((part) => (
+                            <tr key={part.instance_id}>
+                              <td>{part.sheet_index + 1}</td>
+                              <td><strong>{part.part_id}</strong><br /><span className="table-meta">{part.instance_id}</span></td>
+                              <td>{metric(part.x, 2)}, {metric(part.y, 2)}</td>
+                              <td>{metric(part.placed_length, 2)} × {metric(part.placed_width, 2)}</td>
+                              <td>{part.rotated ? "Rotated 90°" : "As entered"}</td>
+                            </tr>
+                          ))}</tbody>
+                        </table>
+                      </div>
+                      {activeResult.placements.length > 100 && <p className="table-footnote">Showing the first 100 placements. Download the placements CSV for the complete result.</p>}
+                    </details>
+                  )}
                   {activeResult.unplaced_instances.length > 0 && (
                     <div className="notice notice-error" style={{ margin: "0 14px 14px" }}>
                       Unplaced instances ({activeResult.unplaced_instances.length}): {activeResult.unplaced_instances.map((item) => item.instance_id).join(", ")}

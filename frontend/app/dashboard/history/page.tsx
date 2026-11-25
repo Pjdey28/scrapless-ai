@@ -129,7 +129,7 @@ export default function HistoryPage() {
                 const { created_at, result } = entry;
                 return <tr key={result.run_id}>
                   <td><input type="checkbox" aria-label={`Compare ${result.run_id}`} checked={compareIds.includes(result.run_id)} disabled={!compareIds.includes(result.run_id) && compareIds.length >= 2} onChange={(event) => setCompareIds((current) => event.target.checked ? [...current, result.run_id] : current.filter((id) => id !== result.run_id))} /></td>
-                  <td><strong>{result.order_name}</strong><br /><span style={{ color: "#89959a", fontSize: 8 }}>{result.run_id.slice(0, 14)}…</span></td>
+                  <td><strong>{result.order_name}</strong><br /><span className="table-meta">{result.run_id.slice(0, 14)}…</span></td>
                   <td>{result.algorithm === "maxrects_bssf" ? "MaxRects BSSF" : "First Fit Decreasing"}</td>
                   <td>{new Date(created_at).toLocaleString()}</td>
                   <td>{result.metrics.sheets_used}</td>

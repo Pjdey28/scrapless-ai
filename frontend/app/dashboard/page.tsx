@@ -12,11 +12,13 @@ export default function DashboardPage() {
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [trends, setTrends] = useState<AnalyticsTrend[]>([]);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadAnalytics()
       .then(({ overview: summary, trends: rows }) => { setOverview(summary); setTrends(rows); })
-      .catch((cause: Error) => setError(cause.message));
+      .catch((cause: Error) => setError(cause.message))
+      .finally(() => setLoading(false));
   }, []);
 
   return (
@@ -26,7 +28,13 @@ export default function DashboardPage() {
         <Link href="/dashboard/optimize" className="btn btn-primary"><Scissors size={14} /> New optimization</Link>
       </div>
       {error && <div className="notice notice-error" role="alert">{error}</div>}
-      {!overview ? <div className="card empty compact" role="status">Loading analysis data…</div> : (
+      {loading ? (
+        <div className="kpi-grid" aria-busy="true" aria-label="Loading workspace overview">
+          {Array.from({ length: 6 }, (_, index) => <div className="card skeleton-card" key={index}><span className="skeleton skeleton-label" /><span className="skeleton skeleton-value" /><span className="skeleton skeleton-caption" /></div>)}
+        </div>
+      ) : !overview ? (
+        <div className="card empty compact" role="alert"><h3>Overview is unavailable</h3><p>{error || "No analysis data could be loaded. Check the service connection and try again."}</p></div>
+      ) : (
         <>
           <div className="kpi-grid">
             <KpiCard label="Optimization results" value={String(overview.run_count)} caption="Actual algorithm results in history" icon={Activity} />
@@ -45,7 +53,7 @@ export default function DashboardPage() {
               <div className="card-heading"><div><h2>Material utilization</h2><p>{overview.mode}</p></div><span className="status-chip">Actual runs</span></div>
               {overview.run_count > 0 && trends.length ? (
                 <div className="chart-area">
-                  <ResponsiveContainer width="100%" height="100%"><LineChart data={trends.slice(-20)} margin={{ top: 10, right: 12, bottom: 5, left: 0 }}><XAxis dataKey="date" tick={{ fontSize: 8, fill: "#829096" }} /><YAxis domain={[0, 100]} tick={{ fontSize: 8, fill: "#829096" }} /><Tooltip formatter={(value) => [`${Number(value).toFixed(1)}%`, "Utilization"]} /><Line type="monotone" dataKey="utilization" stroke="#218058" strokeWidth={2} dot={{ r: 3 }} /></LineChart></ResponsiveContainer>
+                  <ResponsiveContainer width="100%" height="100%"><LineChart data={trends.slice(-20)} margin={{ top: 12, right: 14, bottom: 8, left: 0 }}><XAxis dataKey="date" tick={{ fontSize: 12, fill: "#687269" }} /><YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: "#687269" }} /><Tooltip formatter={(value) => [`${Number(value).toFixed(1)}%`, "Utilization"]} /><Line type="monotone" dataKey="utilization" stroke="#586f1e" strokeWidth={3} dot={{ r: 4, fill: "#c8ed55", stroke: "#556d1d", strokeWidth: 2 }} activeDot={{ r: 6 }} /></LineChart></ResponsiveContainer>
                   <p className="hero-meta" style={{ textAlign: "center" }}>Utilization is physical placed-part area ÷ stock-sheet area.</p>
                 </div>
               ) : (

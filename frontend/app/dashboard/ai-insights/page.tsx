@@ -19,6 +19,7 @@ export default function AiInsightsPage() {
   const [evaluation, setEvaluation] = useState<ModelEvaluation | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -41,6 +42,8 @@ export default function AiInsightsPage() {
       if (active)       setRisk(prediction);
     }).catch((cause: Error) => {
       if (active) setError(cause.message);
+    }).finally(() => {
+      if (active) setInitialLoading(false);
     });
     return () => { active = false; };
   }, []);
@@ -50,6 +53,7 @@ export default function AiInsightsPage() {
     const order = orders.find((item) => item.order_id === orderId);
     if (!order) return;
     setBusy(true);
+    setRisk(null);
     setError("");
     try {
       setRisk(await api.risk(order, sampleSheet));
@@ -81,12 +85,12 @@ export default function AiInsightsPage() {
                 {orders.map((order) => <option value={order.order_id} key={order.order_id}>{order.name}</option>)}
               </select>
             </div>
-            {!risk || busy ? <div className="empty compact" role="status">Evaluating this order…</div> : (
+            {initialLoading || busy ? <div className="empty compact" role="status" aria-busy="true">Evaluating this order…</div> : !risk ? <div className="empty compact" role="status"><h3>Assessment unavailable</h3><p>{error || "No risk result is available for this order."}</p></div> : (
               <>
                 <div className={`notice ${risk.risk_class === "high" ? "notice-error" : "notice-success"}`} style={{ marginTop: 14 }}>
                   <span><strong>{risk.risk_class === "high" ? "Higher synthetic risk signal" : "Lower synthetic risk signal"}</strong><br />Model score: {(risk.model_score * 100).toFixed(1)}% · not a real-world probability.</span>
                 </div>
-                <p style={{ color: "#63737a", fontSize: 10, lineHeight: 1.65 }}>{risk.explanation}</p>
+                <p style={{ color: "#687269", fontSize: 15, lineHeight: 1.65 }}>{risk.explanation}</p>
                 <div className="section-label">Input features</div>
                 <div className="table-wrap">
                   <table className="data-table">
@@ -100,7 +104,7 @@ export default function AiInsightsPage() {
         </section>
         <section className="card">
           <div className="card-heading"><div><h2>Feature importance</h2><p>Global model importance, not a causal explanation</p></div><CircleHelp size={16} color="#869398" /></div>
-          {importance.length ? <div className="chart-area" style={{ height: 330 }}><ResponsiveContainer width="100%" height="100%"><BarChart data={importance} layout="vertical" margin={{ left: 10, right: 18, top: 5, bottom: 5 }}><CartesianGrid stroke="#edf1ef" horizontal={false} /><XAxis type="number" tick={{ fontSize: 8 }} /><YAxis type="category" dataKey="feature" width={135} tick={{ fontSize: 8 }} tickFormatter={featureLabel} /><Tooltip formatter={(value) => [Number(value).toFixed(3), "Importance"]} /><Bar dataKey="importance" fill="#438564" radius={[0, 3, 3, 0]} /></BarChart></ResponsiveContainer></div> : <div className="empty compact">Model importance will appear after evaluation.</div>}
+          {importance.length ? <div className="chart-area" style={{ height: 360 }}><ResponsiveContainer width="100%" height="100%"><BarChart data={importance} layout="vertical" margin={{ left: 12, right: 22, top: 8, bottom: 8 }}><CartesianGrid stroke="#e5e6dd" horizontal={false} /><XAxis type="number" tick={{ fontSize: 12, fill: "#687269" }} /><YAxis type="category" dataKey="feature" width={145} tick={{ fontSize: 13, fill: "#414a42" }} tickFormatter={featureLabel} /><Tooltip formatter={(value) => [Number(value).toFixed(3), "Importance"]} /><Bar dataKey="importance" fill="#9ab83d" radius={[0, 5, 5, 0]} /></BarChart></ResponsiveContainer></div> : <div className="empty compact">Model importance will appear after evaluation.</div>}
           <div style={{ padding: "0 15px 15px" }}>
             {evaluation && <div className="metric-strip">
               {(["accuracy", "precision", "recall", "f1"] as const).map((key) => <div className="metric-mini" key={key}><span>Synthetic {key}</span><strong>{(evaluation[key] * 100).toFixed(1)}%</strong></div>)}
