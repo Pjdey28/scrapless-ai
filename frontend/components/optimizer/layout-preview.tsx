@@ -8,7 +8,7 @@ export function LayoutPreview({ result }: { result: AlgorithmResult }) {
   const { sheet_config: sheet, placements } = result;
   const usedSheets = Array.from(new Set(placements.map((part) => part.sheet_index)));
   if (usedSheets.length === 0) {
-    return <div className="empty compact">No parts were placed. Review the sheet dimensions and maximum sheet limit.</div>;
+    return <div className="empty compact">No parts were placed on {sheet.material} stock. Review the sheet dimensions and maximum sheet limit.</div>;
   }
   return (
     <div className="layout-sheets">
@@ -17,17 +17,17 @@ export function LayoutPreview({ result }: { result: AlgorithmResult }) {
         return (
           <div className="layout-sheet" key={sheetIndex}>
             <div className="layout-sheet-label">
-              <span>Stock sheet {sheetIndex + 1}</span>
+              <span>Stock sheet {sheetIndex + 1} · {sheet.material}</span>
               <span>{sheet.width} × {sheet.length}</span>
             </div>
             <svg
-              aria-label={`Cutting layout for stock sheet ${sheetIndex + 1}`}
+              aria-label={`Cutting layout for ${sheet.material} stock sheet ${sheetIndex + 1}`}
               className="layout-svg"
               role="img"
               viewBox={`0 0 ${sheet.width} ${sheet.length}`}
               preserveAspectRatio="xMidYMid meet"
             >
-              <title>{`Validated cutting plan, ${sheet.width} by ${sheet.length} stock units`}</title>
+              <title>{`Validated ${sheet.material} cutting plan, ${sheet.width} by ${sheet.length} stock units`}</title>
               <defs>
                 <pattern id={`sheet-grid-${sheetIndex}`} width="25" height="25" patternUnits="userSpaceOnUse">
                   <path d="M 25 0 L 0 0 0 25" fill="none" stroke="#e4e5dc" strokeWidth="0.7" />

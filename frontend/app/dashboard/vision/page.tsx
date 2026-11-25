@@ -21,24 +21,22 @@ export default function VisionPage() {
     };
   }, [preview]);
 
-  function chooseFile(selected?: File) {
+  function chooseFile(selected: File | undefined, input: HTMLInputElement) {
     setResult(null);
     setError("");
-    if (!selected) {
-      setFile(null);
-      setPreview("");
-      return;
-    }
+    if (!selected) return;
     if (!selected.type.startsWith("image/")) {
       setFile(null);
       setPreview("");
       setError("Choose an image file.");
+      input.value = "";
       return;
     }
-    if (selected.size > 8 * 1024 * 1024) {
+    if (selected.size > 5 * 1024 * 1024) {
       setFile(null);
       setPreview("");
-      setError("Image exceeds the 8 MB upload limit.");
+      setError("Image exceeds the 5 MB upload limit.");
+      input.value = "";
       return;
     }
     setFile(selected);
@@ -68,9 +66,9 @@ export default function VisionPage() {
       {error && <div className="notice notice-error" role="alert">{error}</div>}
       <div className="dashboard-grid">
         <section className="card">
-          <div className="card-heading"><div><h2>Upload and tune detection</h2><p>PNG, JPEG, WEBP, BMP · maximum 8 MB / 20 megapixels</p></div><ScanSearch size={17} color="#28714e" /></div>
+          <div className="card-heading"><div><h2>Upload and tune detection</h2><p>PNG, JPEG, WEBP, BMP · maximum 5 MB / 4 megapixels</p></div><ScanSearch size={17} color="#28714e" /></div>
           <div style={{ padding: "0 16px 16px" }}>
-            <div className="field"><label htmlFor="vision-file">Material image</label><input id="vision-file" className="input" type="file" accept="image/png,image/jpeg,image/webp,image/bmp" onChange={(event) => chooseFile(event.target.files?.[0])} /></div>
+            <div className="field"><label htmlFor="vision-file">Material image</label><input id="vision-file" className="input" type="file" accept="image/png,image/jpeg,image/webp,image/bmp" onChange={(event) => chooseFile(event.currentTarget.files?.[0], event.currentTarget)} /></div>
             <div className="field-grid" style={{ marginTop: 14 }}>
               <div className="field"><label htmlFor="threshold">Threshold: {threshold}</label><input id="threshold" type="range" min="0" max="255" value={threshold} onChange={(event) => setThreshold(Number(event.target.value))} /><small>Grayscale binary threshold.</small></div>
               <div className="field"><label htmlFor="minimum-area">Minimum contour area: {minimumArea} px²</label><input id="minimum-area" className="input" type="number" min="1" value={minimumArea} onChange={(event) => setMinimumArea(Math.max(1, Number(event.target.value)))} /></div>

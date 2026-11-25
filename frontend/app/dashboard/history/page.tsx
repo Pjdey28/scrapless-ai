@@ -3,7 +3,7 @@
 import { ArrowDownToLine, Search, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { LayoutPreview } from "@/components/optimizer/layout-preview";
-import { api, reportUrl } from "@/lib/api";
+import { api } from "@/lib/api";
 import { isDemoMode, supabase } from "@/lib/supabase";
 import type { AlgorithmResult, HistoryEntry } from "@/types/api";
 
@@ -24,13 +24,12 @@ export default function HistoryPage() {
       try {
         if (supabase) {
           const { data, error: queryError } = await supabase.from("optimization_runs")
-            .select("created_at,payload,report_payload")
+            .select("created_at,payload")
             .order("created_at", { ascending: false });
           if (queryError) throw queryError;
           if (active) setItems((data ?? []).map((row) => ({
             created_at: row.created_at,
             result: row.payload as AlgorithmResult,
-            report_payload: row.report_payload as Record<string, unknown>,
           })));
         } else {
           if (active) setItems(await api.history());
@@ -59,40 +58,22 @@ export default function HistoryPage() {
     && JSON.stringify(comparisonRuns[0].sheet_config) === JSON.stringify(comparisonRuns[1].sheet_config)
     && comparisonRuns.every((item) => item.validation.valid);
 
-  function downloadJson(entry: HistoryEntry) {
-    if (isDemoMode) {
-      window.location.assign(reportUrl(entry.result.run_id, "json"));
-      return;
+  async function downloadJson(entry: HistoryEntry) {
+    setError("");
+    try {
+      await api.downloadReport(entry.result.run_id, "json");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The JSON report could not be downloaded.");
     }
-    const payload = entry.report_payload ?? { analysis: entry.result };
-    const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `scrapless-${entry.result.run_id}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
   }
 
-  function downloadCsv(result: AlgorithmResult) {
-    if (isDemoMode) {
-      window.location.assign(reportUrl(result.run_id, "placements.csv"));
-      return;
+  async function downloadCsv(result: AlgorithmResult) {
+    setError("");
+    try {
+      await api.downloadReport(result.run_id, "placements.csv");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The placements CSV could not be downloaded.");
     }
-    const columns = ["sheet_index", "part_id", "instance_id", "original_length", "original_width", "placed_length", "placed_width", "x", "y", "rotated", "status"] as const;
-    const csv = [
-      columns.join(","),
-      ...result.placements.map((placement) => columns.map((key) => {
-        const value = placement[key];
-        const safe = typeof value === "string" && /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
-        return JSON.stringify(safe);
-      }).join(",")),
-    ].join("\n");
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `scrapless-${result.run_id}-placements.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
   }
 
   return (

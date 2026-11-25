@@ -56,7 +56,7 @@ const result: AlgorithmResult = {
 describe("LayoutPreview", () => {
   it("renders a physical placement using sheet dimensions", () => {
     render(<LayoutPreview result={result} />);
-    expect(screen.getByRole("img", { name: "Cutting layout for stock sheet 1" })).toHaveAttribute("viewBox", "0 0 80 100");
+    expect(screen.getByRole("img", { name: "Cutting layout for MDF stock sheet 1" })).toHaveAttribute("viewBox", "0 0 80 100");
     expect(screen.getByText("PANEL")).toBeInTheDocument();
     expect(screen.getByText(/lower-left sheet origin/)).toBeInTheDocument();
   });

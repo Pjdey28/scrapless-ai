@@ -18,35 +18,69 @@ export default function AiInsightsPage() {
   const [risk, setRisk] = useState<RiskPrediction | null>(null);
   const [evaluation, setEvaluation] = useState<ModelEvaluation | null>(null);
   const [error, setError] = useState("");
+  const [evaluationError, setEvaluationError] = useState("");
   const [busy, setBusy] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let active = true;
-    Promise.all([
-      api.sampleOrder(),
-      api.modelEvaluation(),
-      supabase
+    setInitialLoading(true);
+    setError("");
+    setEvaluationError("");
+    setRisk(null);
+    void (async () => {
+      const [sampleResult, modelResult, savedResult] = await Promise.allSettled([
+        api.sampleOrder(),
+        api.modelEvaluation(),
+        supabase
         ? supabase.from("production_orders").select("order_id,name,parts").then(({ data, error: loadError }) => {
           if (loadError) throw loadError;
           return (data ?? []).map((row) => ({ order_id: row.order_id, name: row.name, parts: row.parts as Part[] }));
         })
         : Promise.resolve([] as Order[]),
-    ]).then(async ([sample, model, saved]) => {
+      ]);
       if (!active) return;
-      const allOrders = [sample, ...saved.filter((item) => item.order_id !== sample.order_id)];
+
+      const sample = sampleResult.status === "fulfilled" ? sampleResult.value : null;
+      const saved = savedResult.status === "fulfilled" ? savedResult.value : [];
+      const allOrders = [
+        ...(sample ? [sample] : []),
+        ...saved.filter((item) => item.order_id !== sample?.order_id),
+      ];
       setOrders(allOrders);
-      setSelectedId(sample.order_id);
-      setEvaluation(model);
-      const prediction = await api.risk(sample, sampleSheet);
-      if (active)       setRisk(prediction);
-    }).catch((cause: Error) => {
-      if (active) setError(cause.message);
-    }).finally(() => {
+      setSelectedId(allOrders[0]?.order_id ?? "");
+      if (modelResult.status === "fulfilled") {
+        setEvaluation(modelResult.value);
+      } else {
+        setEvaluation(null);
+        setEvaluationError(modelResult.reason instanceof Error
+          ? modelResult.reason.message
+          : "Model evaluation could not be loaded.");
+      }
+
+      const setupErrors = [
+        ...(sampleResult.status === "rejected"
+          ? [sampleResult.reason instanceof Error ? sampleResult.reason.message : "The sample order could not be loaded."]
+          : []),
+        ...(savedResult.status === "rejected"
+          ? [savedResult.reason instanceof Error ? savedResult.reason.message : "Saved orders could not be loaded."]
+          : []),
+      ];
+      if (setupErrors.length) setError(setupErrors.join(" "));
+
+      const selectedOrder = allOrders[0];
+      if (selectedOrder) {
+        try {
+          setRisk(await api.risk(selectedOrder, sampleSheet));
+        } catch (cause) {
+          if (active) setError(cause instanceof Error ? cause.message : "Risk assessment failed.");
+        }
+      }
       if (active) setInitialLoading(false);
-    });
+    })();
     return () => { active = false; };
-  }, []);
+  }, [retryKey]);
 
   async function changeOrder(orderId: string) {
     setSelectedId(orderId);
@@ -85,10 +119,10 @@ export default function AiInsightsPage() {
                 {orders.map((order) => <option value={order.order_id} key={order.order_id}>{order.name}</option>)}
               </select>
             </div>
-            {initialLoading || busy ? <div className="empty compact" role="status" aria-busy="true">Evaluating this order…</div> : !risk ? <div className="empty compact" role="status"><h3>Assessment unavailable</h3><p>{error || "No risk result is available for this order."}</p></div> : (
+            {initialLoading || busy ? <div className="empty compact" role="status" aria-busy="true">Evaluating this order…</div> : !orders.length ? <div className="empty compact" role="status"><h3>No order is available</h3><p>Check the API connection and saved-order access, then try again.</p><button className="btn btn-secondary" type="button" onClick={() => setRetryKey((current) => current + 1)}>Retry loading insights</button></div> : !risk ? <div className="empty compact" role="status"><h3>Assessment unavailable</h3><p>{error || "No risk result is available for this order."}</p><button className="btn btn-secondary" type="button" onClick={() => setRetryKey((current) => current + 1)}>Retry assessment</button></div> : (
               <>
                 <div className={`notice ${risk.risk_class === "high" ? "notice-error" : "notice-success"}`} style={{ marginTop: 14 }}>
-                  <span><strong>{risk.risk_class === "high" ? "Higher synthetic risk signal" : "Lower synthetic risk signal"}</strong><br />Model score: {(risk.model_score * 100).toFixed(1)}% · not a real-world probability.</span>
+                  <span><strong>{risk.risk_class === "high" ? "Higher synthetic risk signal" : "Lower synthetic risk signal"}</strong><br />Synthetic-model confidence score: {(risk.model_score * 100).toFixed(1)}% · not calibrated and not a real-world probability.</span>
                 </div>
                 <p style={{ color: "#687269", fontSize: 15, lineHeight: 1.65 }}>{risk.explanation}</p>
                 <div className="section-label">Input features</div>
@@ -104,6 +138,7 @@ export default function AiInsightsPage() {
         </section>
         <section className="card">
           <div className="card-heading"><div><h2>Feature importance</h2><p>Global model importance, not a causal explanation</p></div><CircleHelp size={16} color="#869398" /></div>
+          {evaluationError && <div className="notice notice-error" role="alert" style={{ margin: "0 15px 12px" }}>{evaluationError} <button className="btn btn-secondary" type="button" onClick={() => setRetryKey((current) => current + 1)}>Retry evaluation</button></div>}
           {importance.length ? <div className="chart-area" style={{ height: 360 }}><ResponsiveContainer width="100%" height="100%"><BarChart data={importance} layout="vertical" margin={{ left: 12, right: 22, top: 8, bottom: 8 }}><CartesianGrid stroke="#e5e6dd" horizontal={false} /><XAxis type="number" tick={{ fontSize: 12, fill: "#687269" }} /><YAxis type="category" dataKey="feature" width={145} tick={{ fontSize: 13, fill: "#414a42" }} tickFormatter={featureLabel} /><Tooltip formatter={(value) => [Number(value).toFixed(3), "Importance"]} /><Bar dataKey="importance" fill="#9ab83d" radius={[0, 5, 5, 0]} /></BarChart></ResponsiveContainer></div> : <div className="empty compact">Model importance will appear after evaluation.</div>}
           <div style={{ padding: "0 15px 15px" }}>
             {evaluation && <div className="metric-strip">

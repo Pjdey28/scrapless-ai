@@ -28,6 +28,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(isDemoMode);
   const [authorized, setAuthorized] = useState(isDemoMode);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
+  const [logoutBusy, setLogoutBusy] = useState(false);
 
   useEffect(() => {
     if (!supabase) return;
@@ -57,8 +59,26 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function logout() {
-    if (supabase) await supabase.auth.signOut();
-    router.replace("/");
+    setLogoutError("");
+    if (!supabase) {
+      router.replace("/");
+      return;
+    }
+    setLogoutBusy(true);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        setLogoutError(`Could not sign out: ${error.message}`);
+        return;
+      }
+      router.replace("/");
+    } catch (cause) {
+      setLogoutError(
+        `Could not sign out: ${cause instanceof Error ? cause.message : "Please retry."}`,
+      );
+    } finally {
+      setLogoutBusy(false);
+    }
   }
 
   if (!ready || !authorized) {
@@ -98,7 +118,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <Link className={`nav-link ${pathname === "/dashboard/settings" ? "nav-link-active" : ""}`} href="/dashboard/settings" aria-current={pathname === "/dashboard/settings" ? "page" : undefined}>
             <Settings2 size={17} /><span>Settings</span>
           </Link>
-          <button className="nav-link signout-link" onClick={logout}><LogOut size={17} /><span>{supabase ? "Sign out" : "Back to site"}</span></button>
+          <button className="nav-link signout-link" onClick={() => void logout()} disabled={logoutBusy}><LogOut size={17} /><span>{logoutBusy ? "Signing out…" : supabase ? "Sign out" : "Back to site"}</span></button>
           <div className="sidebar-profile">
             <div className="profile-avatar">SL</div><div><strong>{isDemoMode ? "Demo workspace" : "Your workspace"}</strong><small>{isDemoMode ? "Local demo mode" : "Authenticated account"}</small></div>
           </div>
@@ -113,7 +133,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <div className="profile-avatar top-avatar">SL</div>
           </div>
         </header>
-        <main className="main-content" id="main-content" tabIndex={-1}>{children}</main>
+        <main className="main-content" id="main-content" tabIndex={-1}>
+          {logoutError && <div className="notice notice-error" role="alert">{logoutError}</div>}
+          {children}
+        </main>
         <footer className="app-footer"><span>ScrapLess AI · Predict waste. Optimize cutting.</span><span>{isDemoMode ? "Demo data is not persisted." : "Your account data is protected by Supabase RLS."}</span></footer>
       </div>
     </div>

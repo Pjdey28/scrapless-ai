@@ -11,22 +11,25 @@ import { supabase } from "@/lib/supabase";
 import type { Order, Part } from "@/types/api";
 
 const partSchema = z.object({
-  part_id: z.string().trim().min(1, "Part ID is required."),
-  length: z.coerce.number().finite().positive("Length must be positive."),
-  width: z.coerce.number().finite().positive("Width must be positive."),
-  quantity: z.coerce.number().int().positive("Quantity must be a positive whole number."),
-  priority: z.coerce.number().int().min(0).default(0),
-  material: z.string().optional(),
-  description: z.string().optional(),
+  part_id: z.string().trim().min(1, "Part ID is required.").max(100, "Part ID must be at most 100 characters."),
+  length: z.coerce.number().finite().positive("Length must be positive.").max(100_000, "Length cannot exceed 100,000."),
+  width: z.coerce.number().finite().positive("Width must be positive.").max(100_000, "Width cannot exceed 100,000."),
+  quantity: z.coerce.number().int().positive("Quantity must be a positive whole number.").max(500, "Quantity cannot exceed 500."),
+  priority: z.coerce.number().int().min(0).max(1_000_000).default(0),
+  material: z.string().max(100, "Material must be at most 100 characters.").optional(),
+  description: z.string().max(500, "Description must be at most 500 characters.").optional(),
 });
 const formSchema = z.object({
-  order_id: z.string().trim().min(1, "Order ID is required."),
-  name: z.string().trim().min(1, "Order name is required."),
-  parts: z.array(partSchema).min(1, "Add at least one part."),
+  order_id: z.string().trim().min(1, "Order ID is required.").max(100, "Order ID must be at most 100 characters."),
+  name: z.string().trim().min(1, "Order name is required.").max(200, "Order name must be at most 200 characters."),
+  parts: z.array(partSchema).min(1, "Add at least one part.").max(250, "An order can contain at most 250 part types."),
 }).superRefine((value, context) => {
   const ids = value.parts.map((part) => part.part_id);
   if (new Set(ids).size !== ids.length) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["parts"], message: "Part IDs must be unique within an order." });
+  }
+  if (value.parts.reduce((sum, part) => sum + part.quantity, 0) > 500) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["parts"], message: "An order can contain at most 500 part instances." });
   }
 });
 type OrderFormInput = z.input<typeof formSchema>;
@@ -162,29 +165,29 @@ export default function OrdersPage() {
           <div className="card-heading"><div><h2>{editingId ? "Edit production order" : "Create production order"}</h2><p>Dimensions use the same units as your selected stock sheet.</p></div></div>
           <form onSubmit={handleSubmit(submit)} style={{ padding: "0 16px 16px" }}>
             <div className="field-grid">
-              <div className="field"><label htmlFor="order_id">Order ID</label><input id="order_id" className={`input ${errors.order_id ? "input-error" : ""}`} readOnly={Boolean(editingId)} {...register("order_id")} />{errors.order_id && <span className="field-error">{errors.order_id.message}</span>}</div>
-              <div className="field"><label htmlFor="order_name">Order name</label><input id="order_name" className={`input ${errors.name ? "input-error" : ""}`} {...register("name")} />{errors.name && <span className="field-error">{errors.name.message}</span>}</div>
+              <div className="field"><label htmlFor="order_id">Order ID</label><input id="order_id" aria-invalid={Boolean(errors.order_id)} aria-describedby={errors.order_id ? "order-id-error" : undefined} className={`input ${errors.order_id ? "input-error" : ""}`} readOnly={Boolean(editingId)} {...register("order_id")} />{errors.order_id && <span id="order-id-error" className="field-error" role="alert">{errors.order_id.message}</span>}</div>
+              <div className="field"><label htmlFor="order_name">Order name</label><input id="order_name" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? "order-name-error" : undefined} className={`input ${errors.name ? "input-error" : ""}`} {...register("name")} />{errors.name && <span id="order-name-error" className="field-error" role="alert">{errors.name.message}</span>}</div>
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "16px 0 8px" }}>
               <p className="section-label" style={{ margin: 0 }}>PARTS ({fields.length})</p>
-              <button type="button" className="btn btn-quiet" onClick={() => append(blankPart())}><Plus size={13} /> Add part</button>
+              <button type="button" className="btn btn-quiet" disabled={fields.length >= 250} onClick={() => append(blankPart())}><Plus size={13} /> Add part</button>
             </div>
             <div style={{ display: "grid", gap: 8 }}>
               {fields.map((field, index) => (
                 <div key={field.id} className="card" style={{ padding: 10, boxShadow: "none" }}>
                   <div className="field-grid">
-                    <div className="field"><label htmlFor={`parts.${index}.part_id`}>Part ID</label><input id={`parts.${index}.part_id`} className="input" {...register(`parts.${index}.part_id`)} /></div>
-                    <div className="field"><label htmlFor={`parts.${index}.length`}>Length</label><input id={`parts.${index}.length`} className="input" type="number" step="any" min="0" {...register(`parts.${index}.length`)} />{errors.parts?.[index]?.length && <span className="field-error">{errors.parts[index]?.length?.message}</span>}</div>
-                    <div className="field"><label htmlFor={`parts.${index}.width`}>Width</label><input id={`parts.${index}.width`} className="input" type="number" step="any" min="0" {...register(`parts.${index}.width`)} />{errors.parts?.[index]?.width && <span className="field-error">{errors.parts[index]?.width?.message}</span>}</div>
-                    <div className="field"><label htmlFor={`parts.${index}.quantity`}>Quantity</label><input id={`parts.${index}.quantity`} className="input" type="number" step="1" min="1" {...register(`parts.${index}.quantity`)} />{errors.parts?.[index]?.quantity && <span className="field-error">{errors.parts[index]?.quantity?.message}</span>}</div>
-                    <div className="field"><label htmlFor={`parts.${index}.material`}>Material (optional)</label><input id={`parts.${index}.material`} className="input" {...register(`parts.${index}.material`)} /></div>
-                    <div className="field"><label htmlFor={`parts.${index}.description`}>Description</label><input id={`parts.${index}.description`} className="input" {...register(`parts.${index}.description`)} /></div>
+                    <div className="field"><label htmlFor={`parts.${index}.part_id`}>Part ID</label><input id={`parts.${index}.part_id`} aria-invalid={Boolean(errors.parts?.[index]?.part_id)} aria-describedby={errors.parts?.[index]?.part_id ? `parts-${index}-part-id-error` : undefined} className="input" {...register(`parts.${index}.part_id`)} />{errors.parts?.[index]?.part_id && <span id={`parts-${index}-part-id-error`} className="field-error" role="alert">{errors.parts[index]?.part_id?.message}</span>}</div>
+                    <div className="field"><label htmlFor={`parts.${index}.length`}>Length</label><input id={`parts.${index}.length`} aria-invalid={Boolean(errors.parts?.[index]?.length)} aria-describedby={errors.parts?.[index]?.length ? `parts-${index}-length-error` : undefined} className="input" type="number" step="any" min="0" max="100000" {...register(`parts.${index}.length`)} />{errors.parts?.[index]?.length && <span id={`parts-${index}-length-error`} className="field-error" role="alert">{errors.parts[index]?.length?.message}</span>}</div>
+                    <div className="field"><label htmlFor={`parts.${index}.width`}>Width</label><input id={`parts.${index}.width`} aria-invalid={Boolean(errors.parts?.[index]?.width)} aria-describedby={errors.parts?.[index]?.width ? `parts-${index}-width-error` : undefined} className="input" type="number" step="any" min="0" max="100000" {...register(`parts.${index}.width`)} />{errors.parts?.[index]?.width && <span id={`parts-${index}-width-error`} className="field-error" role="alert">{errors.parts[index]?.width?.message}</span>}</div>
+                    <div className="field"><label htmlFor={`parts.${index}.quantity`}>Quantity</label><input id={`parts.${index}.quantity`} aria-invalid={Boolean(errors.parts?.[index]?.quantity)} aria-describedby={errors.parts?.[index]?.quantity ? `parts-${index}-quantity-error` : undefined} className="input" type="number" step="1" min="1" max="500" {...register(`parts.${index}.quantity`)} />{errors.parts?.[index]?.quantity && <span id={`parts-${index}-quantity-error`} className="field-error" role="alert">{errors.parts[index]?.quantity?.message}</span>}</div>
+                    <div className="field"><label htmlFor={`parts.${index}.material`}>Material (optional)</label><input id={`parts.${index}.material`} aria-invalid={Boolean(errors.parts?.[index]?.material)} aria-describedby={errors.parts?.[index]?.material ? `parts-${index}-material-error` : undefined} className="input" {...register(`parts.${index}.material`)} />{errors.parts?.[index]?.material && <span id={`parts-${index}-material-error`} className="field-error" role="alert">{errors.parts[index]?.material?.message}</span>}</div>
+                    <div className="field"><label htmlFor={`parts.${index}.description`}>Description</label><input id={`parts.${index}.description`} aria-invalid={Boolean(errors.parts?.[index]?.description)} aria-describedby={errors.parts?.[index]?.description ? `parts-${index}-description-error` : undefined} className="input" {...register(`parts.${index}.description`)} />{errors.parts?.[index]?.description && <span id={`parts-${index}-description-error`} className="field-error" role="alert">{errors.parts[index]?.description?.message}</span>}</div>
                   </div>
                   {fields.length > 1 && <button type="button" className="btn btn-quiet" style={{ marginTop: 6 }} onClick={() => remove(index)}><Trash2 size={12} /> Remove part</button>}
                 </div>
               ))}
             </div>
-            {errors.parts?.message && <p className="field-error">{errors.parts.message}</p>}
+            {errors.parts?.message && <p className="field-error" role="alert">{errors.parts.message}</p>}
             <div className="inline-actions" style={{ marginTop: 14 }}>
               <button className="btn btn-primary" type="submit" disabled={busy}>{busy ? "Validating…" : editingId ? "Update order" : "Save order"}</button>
               {editingId && <button className="btn btn-secondary" type="button" onClick={() => { setEditingId(null); reset({ order_id: "", name: "", parts: [blankPart()] }); }}>Cancel edit</button>}
@@ -193,11 +196,11 @@ export default function OrdersPage() {
         </section>
 
         <section className="card">
-          <div className="card-heading"><div><h2>Import a part list</h2><p>UTF-8 CSV · 2 MB maximum · row-level feedback</p></div><FileUp size={17} color="#28714e" /></div>
+          <div className="card-heading"><div><h2>Import a part list</h2><p>UTF-8 CSV · 1 MB maximum · up to 250 rows · row-level feedback</p></div><FileUp size={17} color="#28714e" /></div>
           <div style={{ padding: "0 16px 16px" }}>
             <div className="field">
               <label htmlFor="csv-upload">Choose a CSV file</label>
-              <input id="csv-upload" className="input" type="file" accept=".csv,text/csv" disabled={busy} onChange={(event) => void importCsv(event.target.files?.[0])} />
+              <input id="csv-upload" className="input" type="file" accept=".csv,text/csv" disabled={busy} onChange={(event) => { const input = event.currentTarget; void importCsv(input.files?.[0]).finally(() => { input.value = ""; }); }} />
               <small>Required headers: part_id, length, width, quantity. Optional: priority, material, description.</small>
             </div>
             {csvParts && <div className={`notice ${csvErrors.length ? "notice-error" : "notice-success"}`} role={csvErrors.length ? "alert" : "status"}>{csvErrors.length ? `${csvErrors.length} invalid row(s). The invalid rows are not silently dropped; correct the file before importing.` : `${csvParts.length} valid part rows ready for review.`}</div>}

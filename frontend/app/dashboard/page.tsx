@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { Activity, ArrowRight, Boxes, CircleDollarSign, Layers3, PackageCheck, Scissors } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { loadAnalytics } from "@/lib/analytics";
+import { isDemoMode } from "@/lib/supabase";
 import { KpiCard } from "@/components/ui/kpi-card";
 import type { AnalyticsOverview, AnalyticsTrend } from "@/types/api";
 
@@ -14,12 +15,23 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadAnalytics()
-      .then(({ overview: summary, trends: rows }) => { setOverview(summary); setTrends(rows); })
-      .catch((cause: Error) => setError(cause.message))
-      .finally(() => setLoading(false));
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const { overview: summary, trends: rows } = await loadAnalytics();
+      setOverview(summary);
+      setTrends(rows);
+    } catch (cause) {
+      setOverview(null);
+      setTrends([]);
+      setError(cause instanceof Error ? cause.message : "The workspace overview could not be loaded.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { void refresh(); }, [refresh]);
 
   return (
     <>
@@ -33,7 +45,7 @@ export default function DashboardPage() {
           {Array.from({ length: 6 }, (_, index) => <div className="card skeleton-card" key={index}><span className="skeleton skeleton-label" /><span className="skeleton skeleton-value" /><span className="skeleton skeleton-caption" /></div>)}
         </div>
       ) : !overview ? (
-        <div className="card empty compact" role="alert"><h3>Overview is unavailable</h3><p>{error || "No analysis data could be loaded. Check the service connection and try again."}</p></div>
+        <div className="card empty compact" role="alert"><h3>Overview is unavailable</h3><p>{error || "No analysis data could be loaded. Check the service connection and try again."}</p><button className="btn btn-secondary" type="button" onClick={() => void refresh()}>Retry loading overview</button></div>
       ) : (
         <>
           <div className="kpi-grid">
@@ -60,7 +72,7 @@ export default function DashboardPage() {
                 <div className="empty compact">
                   <div className="empty-icon"><Boxes size={20} /></div>
                   <h3>No optimization data yet</h3>
-                  <p>Run both algorithms on a sample or production order to populate these metrics. Demo results remain in memory only.</p>
+                  <p>Run both algorithms on a sample or production order to populate these metrics. {isDemoMode ? "Development demo results are held in memory only." : "Authenticated results are saved to your account."}</p>
                   <Link className="btn btn-secondary" href="/dashboard/optimize">Run sample analysis <ArrowRight size={13} /></Link>
                 </div>
               )}

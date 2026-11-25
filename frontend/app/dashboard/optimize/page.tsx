@@ -6,21 +6,20 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { LayoutPreview } from "@/components/optimizer/layout-preview";
-import { api, reportUrl } from "@/lib/api";
-import { saveRun } from "@/lib/persistence";
+import { api } from "@/lib/api";
 import { isDemoMode, supabase } from "@/lib/supabase";
 import type { AlgorithmResult, CsvValidation, OptimizationResponse, Order, Part, SheetConfig } from "@/types/api";
 
 const sheetSchema = z.object({
-  length: z.coerce.number().finite().positive("Enter a positive sheet length."),
-  width: z.coerce.number().finite().positive("Enter a positive sheet width."),
+  length: z.coerce.number().finite().positive("Enter a positive sheet length.").max(100_000, "Sheet length cannot exceed 100,000."),
+  width: z.coerce.number().finite().positive("Enter a positive sheet width.").max(100_000, "Sheet width cannot exceed 100,000."),
   material: z.string().trim().min(1, "Select a material."),
-  cost_per_sheet: z.coerce.number().finite().min(0, "Cost cannot be negative."),
+  cost_per_sheet: z.coerce.number().finite().min(0, "Cost cannot be negative.").max(1_000_000_000, "Cost cannot exceed 1,000,000,000."),
   currency: z.string().length(3).regex(/^[A-Z]{3}$/, "Use a 3-letter uppercase currency code."),
-  spacing: z.coerce.number().finite().min(0, "Spacing cannot be negative."),
+  spacing: z.coerce.number().finite().min(0, "Spacing cannot be negative.").max(100_000, "Spacing cannot exceed 100,000."),
   allow_rotation: z.boolean(),
-  max_sheets: z.coerce.number().int().min(1).max(10_000),
-  margin: z.coerce.number().finite().min(0, "Margin cannot be negative."),
+  max_sheets: z.coerce.number().int().min(1).max(200),
+  margin: z.coerce.number().finite().min(0, "Margin cannot be negative.").max(100_000, "Margin cannot exceed 100,000."),
 }).superRefine((config, context) => {
   if (config.margin * 2 >= Math.min(config.length, config.width)) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["margin"], message: "Margin must be less than half of both sheet dimensions." });
@@ -46,7 +45,8 @@ function metric(value: number, precision = 1) {
 }
 
 function PartSummary({ order }: { order: Order }) {
-  return <div className="order-summary"><div><strong>{order.name}</strong><span>{order.order_id} · {order.parts.length} part types · {order.parts.reduce((sum, part) => sum + part.quantity, 0)} instances</span></div><span>{[...new Set(order.parts.map((part) => part.material).filter(Boolean))].join(", ") || "Mixed material"}</span></div>;
+  const materials = [...new Set(order.parts.map((part) => part.material?.trim()).filter(Boolean))];
+  return <div className="order-summary"><div><strong>{order.name}</strong><span>{order.order_id} · {order.parts.length} part types · {order.parts.reduce((sum, part) => sum + part.quantity, 0)} instances</span></div><span>Part materials: {materials.join(", ") || "Not specified; selected stock material is assumed"}</span></div>;
 }
 
 export default function OptimizePage() {
@@ -118,6 +118,19 @@ export default function OptimizePage() {
       return;
     }
     if (busy) return;
+    const sheetMaterial = values.material.trim().toLocaleLowerCase();
+    const incompatibleMaterials = [...new Set(
+      order.parts
+        .map((part) => part.material?.trim())
+        .filter((material): material is string => Boolean(material))
+        .filter((material) => material.toLocaleLowerCase() !== sheetMaterial),
+    )];
+    if (incompatibleMaterials.length) {
+      setError(
+        `Part material(s) ${incompatibleMaterials.join(", ")} do not match selected stock-sheet material "${values.material}". Run one optimization per material.`,
+      );
+      return;
+    }
     setBusy(true);
     setError("");
     setNotice("");
@@ -130,22 +143,22 @@ export default function OptimizePage() {
       if (!analysis.baseline.validation.valid || !analysis.optimized.validation.valid) {
         setError("At least one layout failed independent geometric validation. Its metrics are not shown as successful.");
       } else if (isDemoMode) {
-        setNotice("Analysis completed. Demo history is held in backend memory and is not durable.");
+        setNotice("Analysis completed. Development demo history is held in bounded backend memory and is not durable.");
       } else {
-        try {
-          await Promise.all([
-            saveRun(analysis.baseline, analysis, order),
-            saveRun(analysis.optimized, analysis, order),
-          ]);
-          setNotice("Both validated algorithm results were saved to your authenticated history.");
-        } catch (cause) {
-          setNotice(`Analysis completed, but saving history failed: ${cause instanceof Error ? cause.message : "Unknown persistence error"}`);
-        }
+        setNotice("Both validated algorithm results were saved to your authenticated account.");
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Optimization failed.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function downloadReport(runId: string, kind: "json" | "placements.csv") {
+    try {
+      await api.downloadReport(runId, kind);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The report could not be downloaded.");
     }
   }
 
@@ -238,7 +251,7 @@ export default function OptimizePage() {
               {result.baseline.validation.valid && result.optimized.validation.valid && (
                 <div className="notice notice-info" style={{ margin: "10px 14px 0" }}>
                   Experimental synthetic-data risk signal: <strong>{result.risk_prediction.risk_class}</strong>
-                  {" · "}model score {(result.risk_prediction.model_score * 100).toFixed(1)}% (not a real-world probability).
+                  {" · "}synthetic-model confidence {(result.risk_prediction.model_score * 100).toFixed(1)}% (not calibrated and not a real-world probability).
                   {" "}{result.risk_prediction.data_disclaimer}
                 </div>
               )}
@@ -304,9 +317,9 @@ export default function OptimizePage() {
                     </div>
                   )}
                   <div className="inline-actions" style={{ padding: "0 14px 16px" }}>
-                    <a className="btn btn-secondary" href={reportUrl(activeResult.run_id, "json")}><ArrowDownToLine size={13} /> JSON report</a>
-                    <a className="btn btn-secondary" href={reportUrl(activeResult.run_id, "placements.csv")}><ArrowDownToLine size={13} /> Placements CSV</a>
-                    {!isDemoMode && <span className="hero-meta">Saved to account history when database access is available.</span>}
+                    <button className="btn btn-secondary" type="button" onClick={() => void downloadReport(activeResult.run_id, "json")}><ArrowDownToLine size={13} /> JSON report</button>
+                    <button className="btn btn-secondary" type="button" onClick={() => void downloadReport(activeResult.run_id, "placements.csv")}><ArrowDownToLine size={13} /> Placements CSV</button>
+                    {!isDemoMode && <span className="hero-meta">Saved to account history by the authenticated API.</span>}
                   </div>
                 </>
               )}

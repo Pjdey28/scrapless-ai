@@ -1,7 +1,7 @@
 "use client";
 
 import { Activity, CircleDollarSign, Layers3, PackageCheck } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Bar, BarChart, CartesianGrid, ComposedChart, Legend, Line, LineChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -20,15 +20,23 @@ export default function AnalyticsPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadAnalytics()
-      .then(({ overview: overviewData, trends: rows }) => {
-        setOverview(overviewData);
-        setTrends(rows);
-      })
-      .catch((cause: Error) => setError(cause.message))
-      .finally(() => setLoading(false));
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const { overview: overviewData, trends: rows } = await loadAnalytics();
+      setOverview(overviewData);
+      setTrends(rows);
+    } catch (cause) {
+      setOverview(null);
+      setTrends([]);
+      setError(cause instanceof Error ? cause.message : "Analytics could not be loaded.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { void refresh(); }, [refresh]);
 
   const filtered = useMemo(() => trends.filter((item) => {
     const date = item.date.slice(0, 10);
@@ -61,7 +69,7 @@ export default function AnalyticsPage() {
         <div><p className="eyebrow">MANUFACTURING ANALYTICS</p><h1>Measure material performance.</h1><p className="page-description">Charts and totals are derived from algorithm results actually returned and saved in the current data store.</p></div>
         <button className="btn btn-secondary" onClick={exportCsv} disabled={!filtered.length}>Export filtered CSV</button>
       </div>
-      {error && <div className="notice notice-error" role="alert">{error}</div>}
+      {error && <div className="notice notice-error" role="alert"><span>{error}</span><button className="btn btn-secondary" type="button" onClick={() => void refresh()}>Retry</button></div>}
       {loading && <div className="kpi-grid" aria-busy="true" aria-label="Loading analytics">
         {Array.from({ length: 4 }, (_, index) => <div className="card skeleton-card" key={index}><span className="skeleton skeleton-label" /><span className="skeleton skeleton-value" /><span className="skeleton skeleton-caption" /></div>)}
       </div>}
