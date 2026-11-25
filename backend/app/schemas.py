@@ -116,11 +116,47 @@ class Comparison(BaseModel):
     improvements_valid: bool
 
 
+class FeatureImportance(BaseModel):
+    feature: str
+    importance: float = Field(ge=0, le=1)
+
+
+class RiskPrediction(BaseModel):
+    risk_class: Literal["high", "lower"]
+    model_score: float = Field(ge=0, le=1)
+    feature_importance: list[FeatureImportance]
+    explanation: str
+    model_version: str
+    data_disclaimer: str
+    features: dict[str, float]
+
+
+class ModelEvaluation(BaseModel):
+    training_rows: int = Field(ge=1)
+    testing_rows: int = Field(ge=1)
+    accuracy: float = Field(ge=0, le=1)
+    precision: float = Field(ge=0, le=1)
+    recall: float = Field(ge=0, le=1)
+    f1: float = Field(ge=0, le=1)
+    confusion_matrix: list[list[int]]
+    feature_importance: list[FeatureImportance]
+    model_version: str
+    data_disclaimer: str
+
+
 class OptimizationResponse(BaseModel):
     baseline: AlgorithmResult
     optimized: AlgorithmResult
     comparison: Comparison
+    risk_prediction: RiskPrediction
     synthetic_data_disclaimer: str
+
+
+class OptimizationInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    order: Order
+    sheet_config: SheetConfig
 
 
 def new_run_id() -> str:

@@ -46,6 +46,23 @@ def test_oversized_parts_are_reported_unplaced() -> None:
     assert result.unplaced_instances[0]["part_id"] == "TOO-BIG"
 
 
+def test_order_rejects_duplicate_ids_and_excessive_instance_counts() -> None:
+    with pytest.raises(ValueError, match="unique"):
+        order(
+            [
+                Part(part_id="DUP", length=10, width=10, quantity=1),
+                Part(part_id="DUP", length=12, width=12, quantity=1),
+            ]
+        )
+    with pytest.raises(ValueError, match="100,000"):
+        order(
+            [
+                Part(part_id="LARGE", length=10, width=10, quantity=100_000),
+                Part(part_id="EXTRA", length=10, width=10, quantity=1),
+            ]
+        )
+
+
 def test_spacing_is_reserved_between_parts() -> None:
     production_order = order([Part(part_id="A", length=50, width=50, quantity=2)])
     result = maxrects_bssf(production_order, sheet(length=110, width=110, spacing=1))
