@@ -46,10 +46,68 @@ export default function AnalyticsPage() {
       && (!dateTo || date <= dateTo);
   }), [trends, material, orderFilter, dateFrom, dateTo]);
   const materials = [...new Set(trends.map((item) => item.material))];
+  const groupedComparison = filtered.reduce((groups, item) => {
+    const group = groups.get(item.order_id) ?? {
+      order_id: item.order_id,
+      order_name: item.order_name,
+      ffdTotal: 0,
+      ffdCount: 0,
+      maxRectsTotal: 0,
+      maxRectsCount: 0,
+    };
+    if (item.algorithm === "maxrects_bssf") {
+      group.maxRectsTotal += item.utilization;
+      group.maxRectsCount += 1;
+    } else {
+      group.ffdTotal += item.utilization;
+      group.ffdCount += 1;
+    }
+    groups.set(item.order_id, group);
+    return groups;
+  }, new Map<string, {
+    order_id: string;
+    order_name: string;
+    ffdTotal: number;
+    ffdCount: number;
+    maxRectsTotal: number;
+    maxRectsCount: number;
+  }>());
+  const algorithmComparison = [...groupedComparison.values()].filter((row) => row.ffdCount && row.maxRectsCount).map((row) => ({
+    ...row,
+    ffd: row.ffdTotal / row.ffdCount,
+    maxrects: row.maxRectsTotal / row.maxRectsCount,
+  }));
+  const groupedMaterials = filtered.reduce((groups, item) => {
+    const group = groups.get(item.material) ?? {
+      material: item.material,
+      sheets: 0,
+      unused_area: 0,
+      runs: 0,
+      material_cost: 0,
+      currency: item.currency,
+      mixed_currency: false,
+    };
+    group.sheets += item.sheets_used;
+    group.unused_area += item.unused_area;
+    group.runs += 1;
+    if (group.currency !== item.currency) group.mixed_currency = true;
+    else group.material_cost += item.material_cost;
+    groups.set(item.material, group);
+    return groups;
+  }, new Map<string, {
+    material: string;
+    sheets: number;
+    unused_area: number;
+    runs: number;
+    material_cost: number;
+    currency: string;
+    mixed_currency: boolean;
+  }>());
+  const materialSummary = [...groupedMaterials.values()];
 
   function exportCsv() {
     if (!filtered.length) return;
-    const columns: (keyof AnalyticsTrend)[] = ["date", "run_id", "order_name", "algorithm", "material", "currency", "sheets_used", "utilization", "unused_area", "material_cost"];
+    const columns: (keyof AnalyticsTrend)[] = ["date", "run_id", "order_id", "order_name", "algorithm", "material", "currency", "sheets_used", "utilization", "unused_area", "material_cost"];
     const content = [columns.join(","), ...filtered.map((row) => columns.map((key) => {
       const value = row[key];
       const safe = typeof value === "string" && /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
@@ -70,6 +128,7 @@ export default function AnalyticsPage() {
         <button className="btn btn-secondary" onClick={exportCsv} disabled={!filtered.length}>Export filtered CSV</button>
       </div>
       {error && <div className="notice notice-error" role="alert"><span>{error}</span><button className="btn btn-secondary" type="button" onClick={() => void refresh()}>Retry</button></div>}
+      {filtered.some((item) => item.timestamp_is_simulated) && <div className="notice notice-info" role="status">Demo order dates are simulated historical dates; placements and metrics are computed by the real optimization algorithms.</div>}
       {loading && <div className="kpi-grid" aria-busy="true" aria-label="Loading analytics">
         {Array.from({ length: 4 }, (_, index) => <div className="card skeleton-card" key={index}><span className="skeleton skeleton-label" /><span className="skeleton skeleton-value" /><span className="skeleton skeleton-caption" /></div>)}
       </div>}
@@ -100,6 +159,17 @@ export default function AnalyticsPage() {
         <section className="card">
           <div className="card-heading"><div><h2>Stock sheets by result</h2><p>Actual algorithm output</p></div></div>
           {filtered.length ? <div className="chart-area"><ResponsiveContainer width="100%" height="100%"><BarChart data={filtered.slice(0, 12)} margin={{ top: 12, right: 12, bottom: 8, left: 0 }}><CartesianGrid stroke="#e5e6dd" vertical={false} /><XAxis dataKey="algorithm" tick={{ fontSize: 12, fill: "#687269" }} tickFormatter={(value) => value === "maxrects_bssf" ? "MaxRects" : "FFD"} /><YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#687269" }} /><Tooltip /><Bar dataKey="sheets_used" name="Sheets" fill="#9ab83d" radius={[5, 5, 0, 0]} /></BarChart></ResponsiveContainer></div> : <div className="empty compact"><h3>{error ? "Sheet usage unavailable" : "No results to compare"}</h3><p>{error ? "Resolve the connection issue and reload the page to try again." : "Run an optimization to see sheet usage."}</p></div>}
+        </section>
+      </div>
+      <div className="dashboard-grid" style={{ marginTop: 14 }}>
+        <section className="card">
+          <div className="card-heading"><div><h2>FFD vs. MaxRects</h2><p>Average actual validated utilization by order; repeated runs are averaged within each algorithm.</p></div></div>
+          {algorithmComparison.length ? <div className="chart-area"><ResponsiveContainer width="100%" height="100%"><BarChart data={algorithmComparison.slice(0, 12)} margin={{ top: 12, right: 12, bottom: 8, left: 0 }}><CartesianGrid stroke="#e5e6dd" vertical={false} /><XAxis dataKey="order_name" tick={{ fontSize: 12, fill: "#687269" }} /><YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: "#687269" }} /><Tooltip formatter={(value) => [`${Number(value).toFixed(1)}%`, "Utilization"]} /><Legend /><Bar dataKey="ffd" name="First Fit Decreasing" fill="#859568" /><Bar dataKey="maxrects" name="MaxRects BSSF" fill="#c8ed55" /></BarChart></ResponsiveContainer></div> : <div className="empty compact"><h3>No comparable algorithm pairs</h3><p>Both algorithms must have stored results for an order before it appears here.</p></div>}
+        </section>
+        <section className="card">
+          <div className="card-heading"><div><h2>Material consumption</h2><p>Summed over algorithm results; each order contributes one result per algorithm.</p></div></div>
+          {materialSummary.length ? <div className="chart-area"><ResponsiveContainer width="100%" height="100%"><BarChart data={materialSummary} margin={{ top: 12, right: 12, bottom: 8, left: 0 }}><CartesianGrid stroke="#e5e6dd" vertical={false} /><XAxis dataKey="material" tick={{ fontSize: 12, fill: "#687269" }} /><YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#687269" }} /><Tooltip /><Legend /><Bar dataKey="sheets" name="Sheets consumed" fill="#9ab83d" /><Bar dataKey="runs" name="Algorithm results" fill="#d0a54b" /></BarChart></ResponsiveContainer></div> : <div className="empty compact"><h3>No material results yet</h3><p>Run validated optimizations to compare material-wise sheet usage.</p></div>}
+          {materialSummary.length > 0 && <div className="table-wrap"><table className="data-table"><thead><tr><th>Material</th><th>Unused area proxy</th><th>Estimated cost</th></tr></thead><tbody>{materialSummary.map((row) => <tr key={row.material}><td>{row.material}</td><td>{row.unused_area.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td><td>{row.mixed_currency ? "Mixed currencies" : `${row.currency} ${row.material_cost.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}</td></tr>)}</tbody></table></div>}
         </section>
       </div>
       <section className="card" style={{ marginTop: 14 }}>

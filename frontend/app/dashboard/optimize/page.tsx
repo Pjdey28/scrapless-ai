@@ -7,8 +7,9 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { LayoutPreview } from "@/components/optimizer/layout-preview";
 import { api } from "@/lib/api";
-import { isDemoMode, supabase } from "@/lib/supabase";
-import type { AlgorithmResult, CsvValidation, OptimizationResponse, Order, Part, SheetConfig } from "@/types/api";
+import { loadOrders } from "@/lib/persistence";
+import { isDemoMode } from "@/lib/supabase";
+import type { AlgorithmResult, CsvValidation, OptimizationResponse, Order, SavedOrder, SheetConfig } from "@/types/api";
 
 const sheetSchema = z.object({
   length: z.coerce.number().finite().positive("Enter a positive sheet length.").max(100_000, "Sheet length cannot exceed 100,000."),
@@ -51,7 +52,7 @@ function PartSummary({ order }: { order: Order }) {
 
 export default function OptimizePage() {
   const [order, setOrder] = useState<Order | null>(null);
-  const [savedOrders, setSavedOrders] = useState<Order[]>([]);
+  const [savedOrders, setSavedOrders] = useState<SavedOrder[]>([]);
   const [csvErrors, setCsvErrors] = useState<CsvValidation["errors"]>([]);
   const [result, setResult] = useState<OptimizationResponse | null>(null);
   const [selected, setSelected] = useState<"baseline" | "optimized">("optimized");
@@ -59,18 +60,38 @@ export default function OptimizePage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState(false);
-  const { register, handleSubmit, formState: { errors } } = useForm<SheetFormInput, unknown, SheetForm>({
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<SheetFormInput, unknown, SheetForm>({
     resolver: zodResolver(sheetSchema),
     defaultValues: defaults,
   });
 
+  function applySheetConfig(config: SheetConfig = defaults) {
+    setValue("length", config.length);
+    setValue("width", config.width);
+    setValue("material", config.material);
+    setValue("cost_per_sheet", config.cost_per_sheet);
+    setValue("currency", config.currency);
+    setValue("spacing", config.spacing);
+    setValue("allow_rotation", config.allow_rotation);
+    setValue("max_sheets", config.max_sheets);
+    setValue("margin", config.margin);
+  }
+
   useEffect(() => {
-    if (!supabase) return;
-    void supabase.from("production_orders").select("order_id,name,parts").order("created_at", { ascending: false })
-      .then(({ data, error: loadError }) => {
-        if (loadError) setError(`Could not load saved orders: ${loadError.message}`);
-        else setSavedOrders((data ?? []).map((row) => ({ order_id: row.order_id, name: row.name, parts: row.parts as Part[] })));
+    let active = true;
+    const refresh = () => {
+      void loadOrders().then((orders) => {
+        if (active) setSavedOrders(orders);
+      }).catch((cause: Error) => {
+        if (active) setError(cause.message);
       });
+    };
+    refresh();
+    window.addEventListener("scrapless:orders-updated", refresh);
+    return () => {
+      active = false;
+      window.removeEventListener("scrapless:orders-updated", refresh);
+    };
   }, []);
 
   async function loadSample() {
@@ -78,6 +99,7 @@ export default function OptimizePage() {
     try {
       setOrder(await api.sampleOrder());
       setResult(null);
+      applySheetConfig();
       setNotice("Sample production order loaded from the FastAPI demo endpoint.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The sample order could not be loaded.");
@@ -137,7 +159,8 @@ export default function OptimizePage() {
     setResult(null);
     try {
       const sheetConfig: SheetConfig = values;
-      const analysis = await api.optimize(order, sheetConfig);
+      const optimizationOrder: Order = { order_id: order.order_id, name: order.name, parts: order.parts };
+      const analysis = await api.optimize(optimizationOrder, sheetConfig);
       setResult(analysis);
       setSelected("optimized");
       if (!analysis.baseline.validation.valid || !analysis.optimized.validation.valid) {
@@ -188,7 +211,12 @@ export default function OptimizePage() {
                 <label htmlFor="saved-order">Or choose a saved order</label>
                 <select id="saved-order" className="select" defaultValue="" onChange={(event) => {
                   const selectedOrder = savedOrders.find((item) => item.order_id === event.target.value);
-                  if (selectedOrder) { setOrder(selectedOrder); setResult(null); setError(""); }
+                  if (selectedOrder) {
+                    setOrder(selectedOrder);
+                    setResult(null);
+                    setError("");
+                    if (selectedOrder.metadata?.sheet_config) applySheetConfig(selectedOrder.metadata.sheet_config);
+                  }
                 }}>
                   <option value="" disabled>Select an order…</option>
                   {savedOrders.map((item) => <option value={item.order_id} key={item.order_id}>{item.name} · {item.order_id}</option>)}

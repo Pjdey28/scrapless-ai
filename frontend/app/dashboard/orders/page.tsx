@@ -6,9 +6,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
 import { api } from "@/lib/api";
-import { saveOrder } from "@/lib/persistence";
+import { deleteOrder, loadOrders, saveOrder } from "@/lib/persistence";
 import { supabase } from "@/lib/supabase";
-import type { Order, Part } from "@/types/api";
+import type { Order, Part, SavedOrder } from "@/types/api";
 
 const partSchema = z.object({
   part_id: z.string().trim().min(1, "Part ID is required.").max(100, "Part ID must be at most 100 characters."),
@@ -40,7 +40,7 @@ const blankPart = (): OrderFormInput["parts"][number] => ({
 });
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<SavedOrder[]>([]);
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -55,20 +55,24 @@ export default function OrdersPage() {
   const { fields, append, remove } = useFieldArray({ control, name: "parts" });
 
   useEffect(() => {
-    if (!supabase) return;
-    void supabase.from("production_orders").select("order_id,name,parts").order("created_at", { ascending: false })
-      .then(({ data, error: loadError }) => {
-        if (loadError) setError(`Could not load saved orders: ${loadError.message}`);
-        else setOrders((data ?? []).map((row) => ({
-          order_id: row.order_id,
-          name: row.name,
-          parts: row.parts as Part[],
-        })));
+    let active = true;
+    const refresh = () => {
+      void loadOrders().then((saved) => {
+        if (active) setOrders(saved);
+      }).catch((cause: Error) => {
+        if (active) setError(cause.message);
       });
+    };
+    refresh();
+    window.addEventListener("scrapless:orders-updated", refresh);
+    return () => {
+      active = false;
+      window.removeEventListener("scrapless:orders-updated", refresh);
+    };
   }, []);
 
   const visibleOrders = useMemo(
-    () => orders.filter((order) => `${order.name} ${order.order_id}`.toLowerCase().includes(search.toLowerCase())),
+    () => orders.filter((order) => `${order.name} ${order.order_id} ${order.metadata?.customer_name ?? ""}`.toLowerCase().includes(search.toLowerCase())),
     [orders, search],
   );
 
@@ -77,10 +81,16 @@ export default function OrdersPage() {
     setError("");
     setNotice("");
     try {
-      const order: Order = { ...values, parts: values.parts };
+      const previous = orders.find((item) => item.order_id === values.order_id);
+      const order: SavedOrder = {
+        ...values,
+        parts: values.parts,
+        metadata: previous?.metadata,
+        demo_dataset_id: previous?.demo_dataset_id,
+      };
       await saveOrder(order);
       setOrders((current) => [order, ...current.filter((item) => item.order_id !== order.order_id)]);
-      setNotice(supabase ? "Order saved to your authenticated workspace." : "Order added for this page session only; demo mode does not persist data.");
+      setNotice(supabase ? "Order saved to your authenticated workspace." : "Order saved in this browser's demo workspace storage.");
       setEditingId(null);
       reset({ order_id: "", name: "", parts: [blankPart()] });
     } catch (cause) {
@@ -107,15 +117,14 @@ export default function OrdersPage() {
 
   async function removeOrder(orderId: string) {
     setError("");
-    if (supabase) {
-      const { error: deleteError } = await supabase.from("production_orders").delete().eq("order_id", orderId);
-      if (deleteError) {
-        setError(`Could not delete the order: ${deleteError.message}`);
-        return;
-      }
+    try {
+      await deleteOrder(orderId);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The order could not be deleted.");
+      return;
     }
     setOrders((current) => current.filter((order) => order.order_id !== orderId));
-    setNotice(supabase ? "Order deleted." : "Order removed from this page session.");
+    setNotice(supabase ? "Order deleted." : "Order removed from this browser's demo storage.");
   }
 
   async function importCsv(file?: File) {
@@ -156,7 +165,7 @@ export default function OrdersPage() {
     <>
       <div className="page-header">
         <div><p className="eyebrow">ORDER MANAGEMENT</p><h1>Production orders</h1><p className="page-description">Build, validate, and maintain rectangular part orders before material planning.</p></div>
-        <a className="btn btn-secondary" href="data:text/csv;charset=utf-8,part_id%2Clength%2Cwidth%2Cquantity%2Cpriority%2Cmaterial%2Cdescription%0APANEL-A%2C600%2C400%2C4%2C0%2CMDF%2CMain%20panel" download="scrapless-parts-template.csv"><ArrowDownToLine size={14} /> Sample CSV</a>
+        <div className="inline-actions"><a className="btn btn-secondary" href="/demo/basic-parts-sample.csv" download><ArrowDownToLine size={14} /> Basic CSV</a><a className="btn btn-secondary" href="/demo/production-order-parts-sample.csv" download><ArrowDownToLine size={14} /> Production CSV</a></div>
       </div>
       {notice && <div className="notice notice-success" role="status">{notice}</div>}
       {error && <div className="notice notice-error" role="alert">{error}</div>}
@@ -211,16 +220,18 @@ export default function OrdersPage() {
 
       <section className="card" style={{ marginTop: 15 }}>
         <div className="card-heading">
-          <div><h2>Saved orders</h2><p>{supabase ? "Rows are scoped by your authenticated Supabase account." : "Orders created in demo mode only exist until this page is refreshed."}</p></div>
+          <div><h2>Saved orders</h2><p>{supabase ? "Rows are scoped by your authenticated Supabase account." : "Orders persist in this browser's local demo workspace."}</p></div>
           <div className="field" style={{ width: "min(240px, 42vw)" }}><div style={{ position: "relative" }}><Search size={14} style={{ position: "absolute", left: 9, top: 11, color: "#89959a" }} /><input aria-label="Search orders" className="input" style={{ paddingLeft: 29 }} placeholder="Search orders…" value={search} onChange={(event) => setSearch(event.target.value)} /></div></div>
         </div>
         {visibleOrders.length ? (
           <div className="table-wrap">
             <table className="data-table">
-              <thead><tr><th>Order</th><th>Part types</th><th>Part instances</th><th>Material</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Order</th><th>Customer / dates</th><th>Priority / status</th><th>Part types</th><th>Part instances</th><th>Material</th><th>Actions</th></tr></thead>
               <tbody>{visibleOrders.map((order) => (
                 <tr key={order.order_id}>
                   <td><strong>{order.name}</strong><br /><span className="table-meta">{order.order_id}</span></td>
+                  <td>{order.metadata?.customer_name ?? "—"}<br /><span className="table-meta">Created {order.metadata?.created_at ?? "—"} · Due {order.metadata?.due_date ?? "—"}{order.metadata?.timestamp_is_simulated ? " · simulated" : ""}</span></td>
+                  <td>{order.metadata?.priority ?? "—"} / {order.metadata?.status ?? "—"}</td>
                   <td>{order.parts.length}</td>
                   <td>{order.parts.reduce((sum, part) => sum + part.quantity, 0)}</td>
                   <td>{[...new Set(order.parts.map((part) => part.material).filter(Boolean))].join(", ") || "—"}</td>

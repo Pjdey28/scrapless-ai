@@ -11,7 +11,7 @@ export async function loadAnalytics(): Promise<{ overview: AnalyticsOverview; tr
   }
 
   const { data, error } = await supabase.from("optimization_runs")
-    .select("created_at,order_name,order_id,algorithm,metrics,sheet_config")
+    .select("created_at,run_id,order_name,order_id,algorithm,metrics,sheet_config,demo_dataset_id")
     .order("created_at", { ascending: true });
   if (error) throw new Error(`Could not load saved analytics: ${error.message}`);
 
@@ -19,7 +19,8 @@ export async function loadAnalytics(): Promise<{ overview: AnalyticsOverview; tr
     const metrics = row.metrics as Metrics;
     return {
       date: row.created_at,
-      run_id: `${row.order_id}-${row.algorithm}`,
+      run_id: row.run_id,
+      order_id: row.order_id,
       order_name: row.order_name,
       algorithm: row.algorithm,
       material: (row.sheet_config as SheetConfig).material,
@@ -28,12 +29,16 @@ export async function loadAnalytics(): Promise<{ overview: AnalyticsOverview; tr
       utilization: metrics.utilization_percent,
       unused_area: metrics.unused_area,
       material_cost: metrics.material_cost,
+      demo_dataset_id: row.demo_dataset_id,
+      timestamp_is_simulated: Boolean(row.demo_dataset_id),
     };
   });
   const count = trends.length;
   const currencies = new Set(trends.map((item) => item.currency));
   const overview: AnalyticsOverview = {
-    mode: "Authenticated Supabase records; filtered by Row Level Security",
+    mode: trends.some((item) => item.timestamp_is_simulated)
+      ? "Authenticated Supabase records; demo history dates are simulated"
+      : "Authenticated Supabase records; filtered by Row Level Security",
     run_count: count,
     sheets_used: trends.reduce((sum, item) => sum + item.sheets_used, 0),
     requested_parts: (data ?? []).reduce((sum, row) => sum + (row.metrics as Metrics).total_requested_parts, 0),

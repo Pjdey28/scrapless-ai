@@ -206,5 +206,27 @@ def validate_material_compatibility(order: Order, sheet: SheetConfig) -> None:
         )
 
 
+class DemoWorkspaceOptimizeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    dataset_id: Literal["apex-industrial-components-v1"]
+    order_ids: list[str] = Field(min_length=1, max_length=5)
+
+    @model_validator(mode="after")
+    def unique_order_ids(self) -> DemoWorkspaceOptimizeRequest:
+        if len(set(self.order_ids)) != len(self.order_ids):
+            raise ValueError("Demo optimization batches cannot contain duplicate order IDs.")
+        return self
+
+
+class DemoOptimizationOutcome(BaseModel):
+    order_id: str
+    success: bool
+    run_ids: list[str] = Field(default_factory=list)
+    baseline_valid: bool | None = None
+    optimized_valid: bool | None = None
+    detail: str | None = None
+
+
 def new_run_id() -> str:
     return str(uuid4())

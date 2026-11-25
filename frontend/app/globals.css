@@ -281,6 +281,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .settings-row:last-child { border: 0; }
 .settings-row strong { display: block; color: var(--ink); font-size: 16px; }
 .settings-row span { display: block; margin-top: 5px; color: var(--muted); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.dashboard-header-actions { display: grid; justify-items: end; gap: 9px; }
+.demo-dialog-backdrop { position: fixed; z-index: 80; inset: 0; display: grid; place-items: center; padding: 18px; background: rgb(18 24 19 / 58%); }
+.demo-dialog { width: min(560px, 100%); max-height: min(90vh, 760px); overflow: auto; padding: 24px; box-shadow: var(--shadow-pop); }
+.demo-dialog h2 { margin: 0 0 12px; color: var(--ink); font-size: 23px; }
+.demo-dialog p { color: var(--ink-soft); font-size: 15px; line-height: 1.55; }
+.demo-dialog .inline-actions { justify-content: flex-end; margin-top: 20px; }
+.notice ul { margin: 8px 0 0; padding-left: 20px; }
 .loading-screen { display: grid; min-height: 100vh; place-items: center; color: var(--ink-soft); background: var(--canvas); font-size: 16px; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -339,6 +346,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .top-avatar { display: none; }
   .main-content { padding: 24px 14px 34px; }
   .page-header { flex-direction: column; gap: 15px; }
+  .dashboard-header-actions { justify-items: start; }
+  .demo-dialog { padding: 19px; }
   .page-header h1 { font-size: 31px; letter-spacing: -1px; }
   .page-description { font-size: 15px; }
   .kpi-grid { gap: 9px; }

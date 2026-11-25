@@ -182,6 +182,67 @@ def test_authenticated_runs_and_reports_survive_memory_clear(
     main._runs.clear()
 
 
+def test_authenticated_demo_batch_persists_owner_and_simulated_dataset_marker(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _auth_environment(monkeypatch)
+    persisted: list[dict[str, Any]] = []
+
+    def fake_get(url: str, **kwargs: Any) -> httpx.Response:
+        assert url.endswith("/auth/v1/user")
+        return _supabase_response(url, {"id": USER_ID})
+
+    def fake_post(url: str, **kwargs: Any) -> httpx.Response:
+        assert url.endswith("/rest/v1/optimization_runs")
+        assert kwargs["headers"]["Authorization"] == "Bearer " + ACCESS_TOKEN
+        persisted.extend(kwargs["json"])
+        return httpx.Response(201, request=httpx.Request("POST", url))
+
+    monkeypatch.setattr("app.auth.httpx.get", fake_get)
+    monkeypatch.setattr("app.persistence.httpx.post", fake_post)
+    response = client.post(
+        "/api/v1/demo/workspace/optimize",
+        headers={"Authorization": "Bearer " + ACCESS_TOKEN},
+        json={
+            "dataset_id": "apex-industrial-components-v1",
+            "order_ids": ["APX-DEMO-V1-001"],
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["outcomes"][0]["success"] is True
+    assert len(persisted) == 2
+    assert all(record["user_id"] == USER_ID for record in persisted)
+    assert all(record["demo_dataset_id"] == "apex-industrial-components-v1" for record in persisted)
+    assert {record["created_at"] for record in persisted} == {"2026-11-01T00:00:00+00:00"}
+
+
+def test_authenticated_demo_reset_filters_by_user_and_dataset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _auth_environment(monkeypatch)
+
+    def fake_get(url: str, **kwargs: Any) -> httpx.Response:
+        return _supabase_response(url, {"id": USER_ID})
+
+    def fake_delete(url: str, **kwargs: Any) -> httpx.Response:
+        assert url.endswith("/rest/v1/optimization_runs")
+        assert kwargs["params"] == {
+            "user_id": f"eq.{USER_ID}",
+            "demo_dataset_id": "eq.apex-industrial-components-v1",
+        }
+        assert kwargs["headers"]["Prefer"] == "return=representation"
+        return httpx.Response(200, json=[{}, {}], request=httpx.Request("DELETE", url))
+
+    monkeypatch.setattr("app.auth.httpx.get", fake_get)
+    monkeypatch.setattr("app.persistence.httpx.delete", fake_delete)
+    response = client.delete(
+        "/api/v1/demo/workspace/apex-industrial-components-v1",
+        headers={"Authorization": "Bearer " + ACCESS_TOKEN},
+    )
+    assert response.status_code == 200
+    assert response.json()["optimization_records_deleted"] == 2
+
+
 def test_rate_limiter_rejects_over_budget_optimization(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

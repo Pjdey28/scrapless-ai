@@ -1,0 +1,2737 @@
+{
+  "dataset_id": "apex-industrial-components-v1",
+  "company_name": "Apex Industrial Components",
+  "description": "Fictional, deterministic manufacturing orders for product demonstration.",
+  "records": [
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-001",
+        "name": "Press frame reinforcement",
+        "parts": [
+          {
+            "part_id": "APX-01-P01",
+            "length": 330,
+            "width": 110,
+            "quantity": 1,
+            "priority": 103,
+            "material": "Mild steel",
+            "description": "Mounting plate"
+          },
+          {
+            "part_id": "APX-01-P02",
+            "length": 560,
+            "width": 240,
+            "quantity": 2,
+            "priority": 96,
+            "material": "Mild steel",
+            "description": "Side panel"
+          },
+          {
+            "part_id": "APX-01-P03",
+            "length": 540,
+            "width": 130,
+            "quantity": 1,
+            "priority": 109,
+            "material": "Mild steel",
+            "description": "Access cover"
+          },
+          {
+            "part_id": "APX-01-P04",
+            "length": 320,
+            "width": 190,
+            "quantity": 1,
+            "priority": 105,
+            "material": "Mild steel",
+            "description": "Reinforcement blank"
+          },
+          {
+            "part_id": "APX-01-P05",
+            "length": 600,
+            "width": 430,
+            "quantity": 2,
+            "priority": 108,
+            "material": "Mild steel",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-01-P06",
+            "length": 430,
+            "width": 90,
+            "quantity": 1,
+            "priority": 107,
+            "material": "Mild steel",
+            "description": "Base plate"
+          },
+          {
+            "part_id": "APX-01-P07",
+            "length": 690,
+            "width": 320,
+            "quantity": 1,
+            "priority": 95,
+            "material": "Mild steel",
+            "description": "Support bracket"
+          },
+          {
+            "part_id": "APX-01-P08",
+            "length": 550,
+            "width": 370,
+            "quantity": 1,
+            "priority": 90,
+            "material": "Mild steel",
+            "description": "Wear strip"
+          },
+          {
+            "part_id": "APX-01-P09",
+            "length": 190,
+            "width": 370,
+            "quantity": 2,
+            "priority": 105,
+            "material": "Mild steel",
+            "description": "End panel"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2500,
+        "width": 1250,
+        "material": "Mild steel",
+        "cost_per_sheet": 170.2,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Northstar Equipment",
+        "created_at": "2026-11-01",
+        "due_date": "2026-11-15",
+        "priority": "normal",
+        "status": "in production",
+        "workload_profile": "small-batch",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-002",
+        "name": "Conveyor guard panels",
+        "parts": [
+          {
+            "part_id": "APX-02-P01",
+            "length": 480,
+            "width": 310,
+            "quantity": 1,
+            "priority": 93,
+            "material": "Aluminium",
+            "description": "Side panel"
+          },
+          {
+            "part_id": "APX-02-P02",
+            "length": 570,
+            "width": 300,
+            "quantity": 1,
+            "priority": 88,
+            "material": "Aluminium",
+            "description": "Access cover"
+          },
+          {
+            "part_id": "APX-02-P03",
+            "length": 750,
+            "width": 320,
+            "quantity": 1,
+            "priority": 87,
+            "material": "Aluminium",
+            "description": "Reinforcement blank"
+          },
+          {
+            "part_id": "APX-02-P04",
+            "length": 210,
+            "width": 320,
+            "quantity": 1,
+            "priority": 88,
+            "material": "Aluminium",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-02-P05",
+            "length": 490,
+            "width": 280,
+            "quantity": 1,
+            "priority": 103,
+            "material": "Aluminium",
+            "description": "Base plate"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2440,
+        "width": 1220,
+        "material": "Aluminium",
+        "cost_per_sheet": 136.8,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Meridian Fabrication",
+        "created_at": "2026-11-02",
+        "due_date": "2026-11-16",
+        "priority": "normal",
+        "status": "queued",
+        "workload_profile": "small-batch",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-003",
+        "name": "Pump skid mounting plates",
+        "parts": [
+          {
+            "part_id": "APX-03-P01",
+            "length": 500,
+            "width": 380,
+            "quantity": 1,
+            "priority": 88,
+            "material": "Stainless steel",
+            "description": "Access cover"
+          },
+          {
+            "part_id": "APX-03-P02",
+            "length": 760,
+            "width": 290,
+            "quantity": 2,
+            "priority": 104,
+            "material": "Stainless steel",
+            "description": "Reinforcement blank"
+          },
+          {
+            "part_id": "APX-03-P03",
+            "length": 540,
+            "width": 270,
+            "quantity": 1,
+            "priority": 87,
+            "material": "Stainless steel",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-03-P04",
+            "length": 230,
+            "width": 130,
+            "quantity": 2,
+            "priority": 84,
+            "material": "Stainless steel",
+            "description": "Base plate"
+          },
+          {
+            "part_id": "APX-03-P05",
+            "length": 490,
+            "width": 440,
+            "quantity": 1,
+            "priority": 96,
+            "material": "Stainless steel",
+            "description": "Support bracket"
+          },
+          {
+            "part_id": "APX-03-P06",
+            "length": 580,
+            "width": 130,
+            "quantity": 2,
+            "priority": 97,
+            "material": "Stainless steel",
+            "description": "Wear strip"
+          },
+          {
+            "part_id": "APX-03-P07",
+            "length": 330,
+            "width": 370,
+            "quantity": 1,
+            "priority": 92,
+            "material": "Stainless steel",
+            "description": "End panel"
+          },
+          {
+            "part_id": "APX-03-P08",
+            "length": 440,
+            "width": 440,
+            "quantity": 1,
+            "priority": 101,
+            "material": "Stainless steel",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-03-P09",
+            "length": 580,
+            "width": 130,
+            "quantity": 2,
+            "priority": 93,
+            "material": "Stainless steel",
+            "description": "Spacer plate"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2000,
+        "width": 1000,
+        "material": "Stainless steel",
+        "cost_per_sheet": 228.0,
+        "currency": "EUR",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Pioneer Process Systems",
+        "created_at": "2026-11-03",
+        "due_date": "2026-11-05",
+        "priority": "urgent",
+        "status": "queued",
+        "workload_profile": "small-batch",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-004",
+        "name": "Packaging line brackets",
+        "parts": [
+          {
+            "part_id": "APX-04-P01",
+            "length": 600,
+            "width": 250,
+            "quantity": 1,
+            "priority": 93,
+            "material": "Mild steel",
+            "description": "Reinforcement blank"
+          },
+          {
+            "part_id": "APX-04-P02",
+            "length": 480,
+            "width": 220,
+            "quantity": 2,
+            "priority": 86,
+            "material": "Mild steel",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-04-P03",
+            "length": 630,
+            "width": 410,
+            "quantity": 1,
+            "priority": 91,
+            "material": "Mild steel",
+            "description": "Base plate"
+          },
+          {
+            "part_id": "APX-04-P04",
+            "length": 460,
+            "width": 310,
+            "quantity": 2,
+            "priority": 84,
+            "material": "Mild steel",
+            "description": "Support bracket"
+          },
+          {
+            "part_id": "APX-04-P05",
+            "length": 340,
+            "width": 360,
+            "quantity": 1,
+            "priority": 91,
+            "material": "Mild steel",
+            "description": "Wear strip"
+          },
+          {
+            "part_id": "APX-04-P06",
+            "length": 430,
+            "width": 160,
+            "quantity": 1,
+            "priority": 98,
+            "material": "Mild steel",
+            "description": "End panel"
+          },
+          {
+            "part_id": "APX-04-P07",
+            "length": 610,
+            "width": 450,
+            "quantity": 1,
+            "priority": 97,
+            "material": "Mild steel",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-04-P08",
+            "length": 510,
+            "width": 480,
+            "quantity": 1,
+            "priority": 83,
+            "material": "Mild steel",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-04-P09",
+            "length": 600,
+            "width": 250,
+            "quantity": 1,
+            "priority": 85,
+            "material": "Mild steel",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-04-P10",
+            "length": 130,
+            "width": 310,
+            "quantity": 1,
+            "priority": 86,
+            "material": "Mild steel",
+            "description": "Mounting plate"
+          },
+          {
+            "part_id": "APX-04-P11",
+            "length": 160,
+            "width": 280,
+            "quantity": 1,
+            "priority": 86,
+            "material": "Mild steel",
+            "description": "Side panel"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2200,
+        "width": 1120,
+        "material": "Mild steel",
+        "cost_per_sheet": 192.4,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": false,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Summit Material Handling",
+        "created_at": "2026-11-04",
+        "due_date": "2026-11-18",
+        "priority": "normal",
+        "status": "queued",
+        "workload_profile": "small-batch",
+        "rotation_sensitive": true,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-005",
+        "name": "Industrial cabinet doors",
+        "parts": [
+          {
+            "part_id": "APX-05-P01",
+            "length": 540,
+            "width": 260,
+            "quantity": 1,
+            "priority": 91,
+            "material": "Aluminium",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-05-P02",
+            "length": 200,
+            "width": 300,
+            "quantity": 2,
+            "priority": 94,
+            "material": "Aluminium",
+            "description": "Base plate"
+          },
+          {
+            "part_id": "APX-05-P03",
+            "length": 660,
+            "width": 340,
+            "quantity": 1,
+            "priority": 88,
+            "material": "Aluminium",
+            "description": "Support bracket"
+          },
+          {
+            "part_id": "APX-05-P04",
+            "length": 190,
+            "width": 320,
+            "quantity": 2,
+            "priority": 78,
+            "material": "Aluminium",
+            "description": "Wear strip"
+          },
+          {
+            "part_id": "APX-05-P05",
+            "length": 290,
+            "width": 320,
+            "quantity": 1,
+            "priority": 88,
+            "material": "Aluminium",
+            "description": "End panel"
+          },
+          {
+            "part_id": "APX-05-P06",
+            "length": 730,
+            "width": 450,
+            "quantity": 1,
+            "priority": 84,
+            "material": "Aluminium",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-05-P07",
+            "length": 720,
+            "width": 230,
+            "quantity": 1,
+            "priority": 98,
+            "material": "Aluminium",
+            "description": "Spacer plate"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2150,
+        "width": 1100,
+        "material": "Aluminium",
+        "cost_per_sheet": 153.9,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Harborline Machinery",
+        "created_at": "2026-11-05",
+        "due_date": "2026-12-03",
+        "priority": "low",
+        "status": "ready",
+        "workload_profile": "small-batch",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-006",
+        "name": "Mixer housing components",
+        "parts": [
+          {
+            "part_id": "APX-06-P01",
+            "length": 570,
+            "width": 430,
+            "quantity": 2,
+            "priority": 83,
+            "material": "Stainless steel",
+            "description": "Base plate"
+          },
+          {
+            "part_id": "APX-06-P02",
+            "length": 560,
+            "width": 110,
+            "quantity": 5,
+            "priority": 93,
+            "material": "Stainless steel",
+            "description": "Support bracket"
+          },
+          {
+            "part_id": "APX-06-P03",
+            "length": 550,
+            "width": 230,
+            "quantity": 2,
+            "priority": 76,
+            "material": "Stainless steel",
+            "description": "Wear strip"
+          },
+          {
+            "part_id": "APX-06-P04",
+            "length": 690,
+            "width": 260,
+            "quantity": 3,
+            "priority": 83,
+            "material": "Stainless steel",
+            "description": "End panel"
+          },
+          {
+            "part_id": "APX-06-P05",
+            "length": 460,
+            "width": 380,
+            "quantity": 2,
+            "priority": 86,
+            "material": "Stainless steel",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-06-P06",
+            "length": 450,
+            "width": 140,
+            "quantity": 2,
+            "priority": 87,
+            "material": "Stainless steel",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-06-P07",
+            "length": 670,
+            "width": 280,
+            "quantity": 4,
+            "priority": 89,
+            "material": "Stainless steel",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-06-P08",
+            "length": 720,
+            "width": 370,
+            "quantity": 4,
+            "priority": 80,
+            "material": "Stainless steel",
+            "description": "Mounting plate"
+          },
+          {
+            "part_id": "APX-06-P09",
+            "length": 480,
+            "width": 480,
+            "quantity": 4,
+            "priority": 85,
+            "material": "Stainless steel",
+            "description": "Side panel"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 1760,
+        "width": 900,
+        "material": "Stainless steel",
+        "cost_per_sheet": 209.76,
+        "currency": "EUR",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Cedar Works",
+        "created_at": "2026-11-06",
+        "due_date": "2026-11-13",
+        "priority": "high",
+        "status": "queued",
+        "workload_profile": "mixed-production",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-007",
+        "name": "Work-cell safety panels",
+        "parts": [
+          {
+            "part_id": "APX-07-P01",
+            "length": 450,
+            "width": 260,
+            "quantity": 3,
+            "priority": 76,
+            "material": "Mild steel",
+            "description": "Support bracket"
+          },
+          {
+            "part_id": "APX-07-P02",
+            "length": 390,
+            "width": 310,
+            "quantity": 5,
+            "priority": 78,
+            "material": "Mild steel",
+            "description": "Wear strip"
+          },
+          {
+            "part_id": "APX-07-P03",
+            "length": 690,
+            "width": 270,
+            "quantity": 5,
+            "priority": 80,
+            "material": "Mild steel",
+            "description": "End panel"
+          },
+          {
+            "part_id": "APX-07-P04",
+            "length": 720,
+            "width": 430,
+            "quantity": 2,
+            "priority": 91,
+            "material": "Mild steel",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-07-P05",
+            "length": 440,
+            "width": 220,
+            "quantity": 5,
+            "priority": 74,
+            "material": "Mild steel",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-07-P06",
+            "length": 130,
+            "width": 430,
+            "quantity": 3,
+            "priority": 81,
+            "material": "Mild steel",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-07-P07",
+            "length": 120,
+            "width": 250,
+            "quantity": 2,
+            "priority": 86,
+            "material": "Mild steel",
+            "description": "Mounting plate"
+          },
+          {
+            "part_id": "APX-07-P08",
+            "length": 720,
+            "width": 120,
+            "quantity": 3,
+            "priority": 79,
+            "material": "Mild steel",
+            "description": "Side panel"
+          },
+          {
+            "part_id": "APX-07-P09",
+            "length": 480,
+            "width": 390,
+            "quantity": 3,
+            "priority": 73,
+            "material": "Mild steel",
+            "description": "Access cover"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2700,
+        "width": 1310,
+        "material": "Mild steel",
+        "cost_per_sheet": 177.6,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Northstar Equipment",
+        "created_at": "2026-11-07",
+        "due_date": "2026-11-21",
+        "priority": "normal",
+        "status": "queued",
+        "workload_profile": "mixed-production",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-008",
+        "name": "Palletizer support plates",
+        "parts": [
+          {
+            "part_id": "APX-08-P01",
+            "length": 440,
+            "width": 210,
+            "quantity": 2,
+            "priority": 87,
+            "material": "Aluminium",
+            "description": "Wear strip"
+          },
+          {
+            "part_id": "APX-08-P02",
+            "length": 750,
+            "width": 250,
+            "quantity": 3,
+            "priority": 76,
+            "material": "Aluminium",
+            "description": "End panel"
+          },
+          {
+            "part_id": "APX-08-P03",
+            "length": 710,
+            "width": 120,
+            "quantity": 3,
+            "priority": 71,
+            "material": "Aluminium",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-08-P04",
+            "length": 350,
+            "width": 450,
+            "quantity": 4,
+            "priority": 71,
+            "material": "Aluminium",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-08-P05",
+            "length": 410,
+            "width": 430,
+            "quantity": 4,
+            "priority": 73,
+            "material": "Aluminium",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-08-P06",
+            "length": 230,
+            "width": 320,
+            "quantity": 2,
+            "priority": 80,
+            "material": "Aluminium",
+            "description": "Mounting plate"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2640,
+        "width": 1280,
+        "material": "Aluminium",
+        "cost_per_sheet": 142.5,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Meridian Fabrication",
+        "created_at": "2026-11-08",
+        "due_date": "2026-11-22",
+        "priority": "normal",
+        "status": "in production",
+        "workload_profile": "mixed-production",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-009",
+        "name": "Filter housing blanks",
+        "parts": [
+          {
+            "part_id": "APX-09-P01",
+            "length": 200,
+            "width": 230,
+            "quantity": 3,
+            "priority": 78,
+            "material": "Stainless steel",
+            "description": "End panel"
+          },
+          {
+            "part_id": "APX-09-P02",
+            "length": 350,
+            "width": 390,
+            "quantity": 4,
+            "priority": 74,
+            "material": "Stainless steel",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-09-P03",
+            "length": 190,
+            "width": 350,
+            "quantity": 5,
+            "priority": 84,
+            "material": "Stainless steel",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-09-P04",
+            "length": 250,
+            "width": 160,
+            "quantity": 3,
+            "priority": 78,
+            "material": "Stainless steel",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-09-P05",
+            "length": 560,
+            "width": 140,
+            "quantity": 3,
+            "priority": 75,
+            "material": "Stainless steel",
+            "description": "Mounting plate"
+          },
+          {
+            "part_id": "APX-09-P06",
+            "length": 350,
+            "width": 180,
+            "quantity": 5,
+            "priority": 70,
+            "material": "Stainless steel",
+            "description": "Side panel"
+          },
+          {
+            "part_id": "APX-09-P07",
+            "length": 730,
+            "width": 420,
+            "quantity": 5,
+            "priority": 80,
+            "material": "Stainless steel",
+            "description": "Access cover"
+          },
+          {
+            "part_id": "APX-09-P08",
+            "length": 180,
+            "width": 400,
+            "quantity": 4,
+            "priority": 79,
+            "material": "Stainless steel",
+            "description": "Reinforcement blank"
+          },
+          {
+            "part_id": "APX-09-P09",
+            "length": 760,
+            "width": 390,
+            "quantity": 3,
+            "priority": 74,
+            "material": "Stainless steel",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-09-P10",
+            "length": 670,
+            "width": 320,
+            "quantity": 2,
+            "priority": 80,
+            "material": "Stainless steel",
+            "description": "Base plate"
+          },
+          {
+            "part_id": "APX-09-P11",
+            "length": 400,
+            "width": 450,
+            "quantity": 5,
+            "priority": 73,
+            "material": "Stainless steel",
+            "description": "Support bracket"
+          },
+          {
+            "part_id": "APX-09-P12",
+            "length": 180,
+            "width": 220,
+            "quantity": 2,
+            "priority": 86,
+            "material": "Stainless steel",
+            "description": "Wear strip"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2160,
+        "width": 1050,
+        "material": "Stainless steel",
+        "cost_per_sheet": 237.12,
+        "currency": "EUR",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Pioneer Process Systems",
+        "created_at": "2026-11-09",
+        "due_date": "2026-11-23",
+        "priority": "normal",
+        "status": "ready",
+        "workload_profile": "mixed-production",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-010",
+        "name": "CNC enclosure panels",
+        "parts": [
+          {
+            "part_id": "APX-10-P01",
+            "length": 200,
+            "width": 430,
+            "quantity": 3,
+            "priority": 80,
+            "material": "Mild steel",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-10-P02",
+            "length": 690,
+            "width": 390,
+            "quantity": 5,
+            "priority": 83,
+            "material": "Mild steel",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-10-P03",
+            "length": 280,
+            "width": 360,
+            "quantity": 2,
+            "priority": 70,
+            "material": "Mild steel",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-10-P04",
+            "length": 700,
+            "width": 410,
+            "quantity": 2,
+            "priority": 69,
+            "material": "Mild steel",
+            "description": "Mounting plate"
+          },
+          {
+            "part_id": "APX-10-P05",
+            "length": 530,
+            "width": 360,
+            "quantity": 4,
+            "priority": 81,
+            "material": "Mild steel",
+            "description": "Side panel"
+          },
+          {
+            "part_id": "APX-10-P06",
+            "length": 580,
+            "width": 330,
+            "quantity": 4,
+            "priority": 73,
+            "material": "Mild steel",
+            "description": "Access cover"
+          },
+          {
+            "part_id": "APX-10-P07",
+            "length": 290,
+            "width": 400,
+            "quantity": 3,
+            "priority": 72,
+            "material": "Mild steel",
+            "description": "Reinforcement blank"
+          },
+          {
+            "part_id": "APX-10-P08",
+            "length": 440,
+            "width": 150,
+            "quantity": 4,
+            "priority": 79,
+            "material": "Mild steel",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-10-P09",
+            "length": 460,
+            "width": 250,
+            "quantity": 2,
+            "priority": 81,
+            "material": "Mild steel",
+            "description": "Base plate"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2500,
+        "width": 1250,
+        "material": "Mild steel",
+        "cost_per_sheet": 199.8,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Summit Material Handling",
+        "created_at": "2026-11-10",
+        "due_date": "2026-12-08",
+        "priority": "low",
+        "status": "queued",
+        "workload_profile": "mixed-production",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-011",
+        "name": "Service platform tread plates",
+        "parts": [
+          {
+            "part_id": "APX-11-P01",
+            "length": 520,
+            "width": 340,
+            "quantity": 2,
+            "priority": 77,
+            "material": "Aluminium",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-11-P02",
+            "length": 640,
+            "width": 400,
+            "quantity": 5,
+            "priority": 79,
+            "material": "Aluminium",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-11-P03",
+            "length": 720,
+            "width": 270,
+            "quantity": 2,
+            "priority": 67,
+            "material": "Aluminium",
+            "description": "Mounting plate"
+          },
+          {
+            "part_id": "APX-11-P04",
+            "length": 140,
+            "width": 300,
+            "quantity": 4,
+            "priority": 75,
+            "material": "Aluminium",
+            "description": "Side panel"
+          },
+          {
+            "part_id": "APX-11-P05",
+            "length": 410,
+            "width": 270,
+            "quantity": 2,
+            "priority": 67,
+            "material": "Aluminium",
+            "description": "Access cover"
+          },
+          {
+            "part_id": "APX-11-P06",
+            "length": 270,
+            "width": 340,
+            "quantity": 3,
+            "priority": 78,
+            "material": "Aluminium",
+            "description": "Reinforcement blank"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2440,
+        "width": 1220,
+        "material": "Aluminium",
+        "cost_per_sheet": 131.1,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": false,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Harborline Machinery",
+        "created_at": "2026-11-11",
+        "due_date": "2026-11-25",
+        "priority": "normal",
+        "status": "queued",
+        "workload_profile": "mixed-production",
+        "rotation_sensitive": true,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-012",
+        "name": "Agitator base components",
+        "parts": [
+          {
+            "part_id": "APX-12-P01",
+            "length": 190,
+            "width": 140,
+            "quantity": 2,
+            "priority": 57,
+            "material": "Stainless steel",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-12-P02",
+            "length": 290,
+            "width": 430,
+            "quantity": 2,
+            "priority": 58,
+            "material": "Stainless steel",
+            "description": "Mounting plate"
+          },
+          {
+            "part_id": "APX-12-P03",
+            "length": 610,
+            "width": 190,
+            "quantity": 2,
+            "priority": 68,
+            "material": "Stainless steel",
+            "description": "Side panel"
+          },
+          {
+            "part_id": "APX-12-P04",
+            "length": 240,
+            "width": 370,
+            "quantity": 5,
+            "priority": 71,
+            "material": "Stainless steel",
+            "description": "Access cover"
+          },
+          {
+            "part_id": "APX-12-P05",
+            "length": 660,
+            "width": 390,
+            "quantity": 5,
+            "priority": 64,
+            "material": "Stainless steel",
+            "description": "Reinforcement blank"
+          },
+          {
+            "part_id": "APX-12-P06",
+            "length": 330,
+            "width": 330,
+            "quantity": 5,
+            "priority": 74,
+            "material": "Stainless steel",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-12-P07",
+            "length": 360,
+            "width": 420,
+            "quantity": 4,
+            "priority": 70,
+            "material": "Stainless steel",
+            "description": "Base plate"
+          },
+          {
+            "part_id": "APX-12-P08",
+            "length": 460,
+            "width": 140,
+            "quantity": 4,
+            "priority": 62,
+            "material": "Stainless steel",
+            "description": "Support bracket"
+          },
+          {
+            "part_id": "APX-12-P09",
+            "length": 600,
+            "width": 450,
+            "quantity": 4,
+            "priority": 60,
+            "material": "Stainless steel",
+            "description": "Wear strip"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2000,
+        "width": 1000,
+        "material": "Stainless steel",
+        "cost_per_sheet": 218.88,
+        "currency": "EUR",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Cedar Works",
+        "created_at": "2026-11-12",
+        "due_date": "2026-11-14",
+        "priority": "urgent",
+        "status": "queued",
+        "workload_profile": "mixed-production",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-013",
+        "name": "Robotic cell partitions",
+        "parts": [
+          {
+            "part_id": "APX-13-P01",
+            "length": 370,
+            "width": 200,
+            "quantity": 2,
+            "priority": 69,
+            "material": "Mild steel",
+            "description": "Mounting plate"
+          },
+          {
+            "part_id": "APX-13-P02",
+            "length": 600,
+            "width": 330,
+            "quantity": 3,
+            "priority": 55,
+            "material": "Mild steel",
+            "description": "Side panel"
+          },
+          {
+            "part_id": "APX-13-P03",
+            "length": 750,
+            "width": 250,
+            "quantity": 2,
+            "priority": 68,
+            "material": "Mild steel",
+            "description": "Access cover"
+          },
+          {
+            "part_id": "APX-13-P04",
+            "length": 120,
+            "width": 120,
+            "quantity": 2,
+            "priority": 64,
+            "material": "Mild steel",
+            "description": "Reinforcement blank"
+          },
+          {
+            "part_id": "APX-13-P05",
+            "length": 740,
+            "width": 110,
+            "quantity": 5,
+            "priority": 63,
+            "material": "Mild steel",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-13-P06",
+            "length": 340,
+            "width": 340,
+            "quantity": 5,
+            "priority": 67,
+            "material": "Mild steel",
+            "description": "Base plate"
+          },
+          {
+            "part_id": "APX-13-P07",
+            "length": 350,
+            "width": 410,
+            "quantity": 3,
+            "priority": 74,
+            "material": "Mild steel",
+            "description": "Support bracket"
+          },
+          {
+            "part_id": "APX-13-P08",
+            "length": 690,
+            "width": 220,
+            "quantity": 5,
+            "priority": 67,
+            "material": "Mild steel",
+            "description": "Wear strip"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2200,
+        "width": 1120,
+        "material": "Mild steel",
+        "cost_per_sheet": 185.0,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Northstar Equipment",
+        "created_at": "2026-11-13",
+        "due_date": "2026-11-27",
+        "priority": "normal",
+        "status": "ready",
+        "workload_profile": "mixed-production",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-014",
+        "name": "Heat exchanger end plates",
+        "parts": [
+          {
+            "part_id": "APX-14-P01",
+            "length": 650,
+            "width": 310,
+            "quantity": 2,
+            "priority": 57,
+            "material": "Aluminium",
+            "description": "Side panel"
+          },
+          {
+            "part_id": "APX-14-P02",
+            "length": 430,
+            "width": 400,
+            "quantity": 4,
+            "priority": 60,
+            "material": "Aluminium",
+            "description": "Access cover"
+          },
+          {
+            "part_id": "APX-14-P03",
+            "length": 240,
+            "width": 260,
+            "quantity": 2,
+            "priority": 55,
+            "material": "Aluminium",
+            "description": "Reinforcement blank"
+          },
+          {
+            "part_id": "APX-14-P04",
+            "length": 150,
+            "width": 460,
+            "quantity": 3,
+            "priority": 70,
+            "material": "Aluminium",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-14-P05",
+            "length": 760,
+            "width": 160,
+            "quantity": 4,
+            "priority": 66,
+            "material": "Aluminium",
+            "description": "Base plate"
+          },
+          {
+            "part_id": "APX-14-P06",
+            "length": 160,
+            "width": 360,
+            "quantity": 4,
+            "priority": 55,
+            "material": "Aluminium",
+            "description": "Support bracket"
+          },
+          {
+            "part_id": "APX-14-P07",
+            "length": 680,
+            "width": 140,
+            "quantity": 3,
+            "priority": 67,
+            "material": "Aluminium",
+            "description": "Wear strip"
+          },
+          {
+            "part_id": "APX-14-P08",
+            "length": 470,
+            "width": 320,
+            "quantity": 3,
+            "priority": 57,
+            "material": "Aluminium",
+            "description": "End panel"
+          },
+          {
+            "part_id": "APX-14-P09",
+            "length": 450,
+            "width": 210,
+            "quantity": 2,
+            "priority": 61,
+            "material": "Aluminium",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-14-P10",
+            "length": 180,
+            "width": 240,
+            "quantity": 5,
+            "priority": 71,
+            "material": "Aluminium",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-14-P11",
+            "length": 400,
+            "width": 190,
+            "quantity": 5,
+            "priority": 67,
+            "material": "Aluminium",
+            "description": "Frame gusset"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2150,
+        "width": 1100,
+        "material": "Aluminium",
+        "cost_per_sheet": 148.2,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Meridian Fabrication",
+        "created_at": "2026-11-14",
+        "due_date": "2026-11-28",
+        "priority": "normal",
+        "status": "queued",
+        "workload_profile": "mixed-production",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-015",
+        "name": "Material chute liners",
+        "parts": [
+          {
+            "part_id": "APX-15-P01",
+            "length": 610,
+            "width": 150,
+            "quantity": 2,
+            "priority": 65,
+            "material": "Stainless steel",
+            "description": "Access cover"
+          },
+          {
+            "part_id": "APX-15-P02",
+            "length": 620,
+            "width": 440,
+            "quantity": 3,
+            "priority": 60,
+            "material": "Stainless steel",
+            "description": "Reinforcement blank"
+          },
+          {
+            "part_id": "APX-15-P03",
+            "length": 460,
+            "width": 200,
+            "quantity": 3,
+            "priority": 58,
+            "material": "Stainless steel",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-15-P04",
+            "length": 540,
+            "width": 90,
+            "quantity": 4,
+            "priority": 63,
+            "material": "Stainless steel",
+            "description": "Base plate"
+          },
+          {
+            "part_id": "APX-15-P05",
+            "length": 480,
+            "width": 360,
+            "quantity": 3,
+            "priority": 62,
+            "material": "Stainless steel",
+            "description": "Support bracket"
+          },
+          {
+            "part_id": "APX-15-P06",
+            "length": 290,
+            "width": 170,
+            "quantity": 5,
+            "priority": 51,
+            "material": "Stainless steel",
+            "description": "Wear strip"
+          },
+          {
+            "part_id": "APX-15-P07",
+            "length": 610,
+            "width": 290,
+            "quantity": 3,
+            "priority": 67,
+            "material": "Stainless steel",
+            "description": "End panel"
+          },
+          {
+            "part_id": "APX-15-P08",
+            "length": 650,
+            "width": 400,
+            "quantity": 4,
+            "priority": 60,
+            "material": "Stainless steel",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-15-P09",
+            "length": 360,
+            "width": 370,
+            "quantity": 5,
+            "priority": 49,
+            "material": "Stainless steel",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-15-P10",
+            "length": 430,
+            "width": 220,
+            "quantity": 4,
+            "priority": 67,
+            "material": "Stainless steel",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-15-P11",
+            "length": 140,
+            "width": 130,
+            "quantity": 3,
+            "priority": 65,
+            "material": "Stainless steel",
+            "description": "Mounting plate"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 1760,
+        "width": 900,
+        "material": "Stainless steel",
+        "cost_per_sheet": 246.24,
+        "currency": "EUR",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Pioneer Process Systems",
+        "created_at": "2026-11-15",
+        "due_date": "2026-11-22",
+        "priority": "high",
+        "status": "in production",
+        "workload_profile": "mixed-production",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-016",
+        "name": "Compressor mounting set",
+        "parts": [
+          {
+            "part_id": "APX-16-P01",
+            "length": 170,
+            "width": 210,
+            "quantity": 2,
+            "priority": 51,
+            "material": "Mild steel",
+            "description": "Reinforcement blank"
+          },
+          {
+            "part_id": "APX-16-P02",
+            "length": 700,
+            "width": 400,
+            "quantity": 5,
+            "priority": 64,
+            "material": "Mild steel",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-16-P03",
+            "length": 580,
+            "width": 160,
+            "quantity": 4,
+            "priority": 65,
+            "material": "Mild steel",
+            "description": "Base plate"
+          },
+          {
+            "part_id": "APX-16-P04",
+            "length": 480,
+            "width": 370,
+            "quantity": 5,
+            "priority": 48,
+            "material": "Mild steel",
+            "description": "Support bracket"
+          },
+          {
+            "part_id": "APX-16-P05",
+            "length": 490,
+            "width": 100,
+            "quantity": 3,
+            "priority": 45,
+            "material": "Mild steel",
+            "description": "Wear strip"
+          },
+          {
+            "part_id": "APX-16-P06",
+            "length": 490,
+            "width": 350,
+            "quantity": 3,
+            "priority": 47,
+            "material": "Mild steel",
+            "description": "End panel"
+          },
+          {
+            "part_id": "APX-16-P07",
+            "length": 750,
+            "width": 440,
+            "quantity": 3,
+            "priority": 60,
+            "material": "Mild steel",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-16-P08",
+            "length": 560,
+            "width": 470,
+            "quantity": 3,
+            "priority": 56,
+            "material": "Mild steel",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-16-P09",
+            "length": 320,
+            "width": 440,
+            "quantity": 2,
+            "priority": 63,
+            "material": "Mild steel",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-16-P10",
+            "length": 390,
+            "width": 330,
+            "quantity": 4,
+            "priority": 54,
+            "material": "Mild steel",
+            "description": "Mounting plate"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2700,
+        "width": 1310,
+        "material": "Mild steel",
+        "cost_per_sheet": 170.2,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Summit Material Handling",
+        "created_at": "2026-11-16",
+        "due_date": "2026-11-30",
+        "priority": "normal",
+        "status": "queued",
+        "workload_profile": "mixed-production",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-017",
+        "name": "Warehouse lift brackets",
+        "parts": [
+          {
+            "part_id": "APX-17-P01",
+            "length": 560,
+            "width": 430,
+            "quantity": 4,
+            "priority": 51,
+            "material": "Aluminium",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-17-P02",
+            "length": 540,
+            "width": 310,
+            "quantity": 3,
+            "priority": 58,
+            "material": "Aluminium",
+            "description": "Base plate"
+          },
+          {
+            "part_id": "APX-17-P03",
+            "length": 290,
+            "width": 460,
+            "quantity": 4,
+            "priority": 62,
+            "material": "Aluminium",
+            "description": "Support bracket"
+          },
+          {
+            "part_id": "APX-17-P04",
+            "length": 620,
+            "width": 400,
+            "quantity": 4,
+            "priority": 44,
+            "material": "Aluminium",
+            "description": "Wear strip"
+          },
+          {
+            "part_id": "APX-17-P05",
+            "length": 550,
+            "width": 160,
+            "quantity": 5,
+            "priority": 48,
+            "material": "Aluminium",
+            "description": "End panel"
+          },
+          {
+            "part_id": "APX-17-P06",
+            "length": 780,
+            "width": 410,
+            "quantity": 5,
+            "priority": 52,
+            "material": "Aluminium",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-17-P07",
+            "length": 190,
+            "width": 200,
+            "quantity": 2,
+            "priority": 61,
+            "material": "Aluminium",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-17-P08",
+            "length": 250,
+            "width": 240,
+            "quantity": 5,
+            "priority": 45,
+            "material": "Aluminium",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-17-P09",
+            "length": 320,
+            "width": 450,
+            "quantity": 2,
+            "priority": 51,
+            "material": "Aluminium",
+            "description": "Mounting plate"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2640,
+        "width": 1280,
+        "material": "Aluminium",
+        "cost_per_sheet": 136.8,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Harborline Machinery",
+        "created_at": "2026-11-17",
+        "due_date": "2026-12-15",
+        "priority": "low",
+        "status": "ready",
+        "workload_profile": "mixed-production",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-018",
+        "name": "Hydraulic manifold covers",
+        "parts": [
+          {
+            "part_id": "APX-18-P01",
+            "length": 370,
+            "width": 360,
+            "quantity": 8,
+            "priority": 58,
+            "material": "Stainless steel",
+            "description": "Base plate"
+          },
+          {
+            "part_id": "APX-18-P02",
+            "length": 510,
+            "width": 470,
+            "quantity": 6,
+            "priority": 46,
+            "material": "Stainless steel",
+            "description": "Support bracket"
+          },
+          {
+            "part_id": "APX-18-P03",
+            "length": 760,
+            "width": 240,
+            "quantity": 5,
+            "priority": 51,
+            "material": "Stainless steel",
+            "description": "Wear strip"
+          },
+          {
+            "part_id": "APX-18-P04",
+            "length": 660,
+            "width": 450,
+            "quantity": 6,
+            "priority": 50,
+            "material": "Stainless steel",
+            "description": "End panel"
+          },
+          {
+            "part_id": "APX-18-P05",
+            "length": 380,
+            "width": 160,
+            "quantity": 5,
+            "priority": 44,
+            "material": "Stainless steel",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-18-P06",
+            "length": 640,
+            "width": 280,
+            "quantity": 7,
+            "priority": 49,
+            "material": "Stainless steel",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-18-P07",
+            "length": 300,
+            "width": 140,
+            "quantity": 7,
+            "priority": 51,
+            "material": "Stainless steel",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-18-P08",
+            "length": 720,
+            "width": 310,
+            "quantity": 7,
+            "priority": 57,
+            "material": "Stainless steel",
+            "description": "Mounting plate"
+          },
+          {
+            "part_id": "APX-18-P09",
+            "length": 230,
+            "width": 330,
+            "quantity": 8,
+            "priority": 54,
+            "material": "Stainless steel",
+            "description": "Side panel"
+          },
+          {
+            "part_id": "APX-18-P10",
+            "length": 760,
+            "width": 280,
+            "quantity": 8,
+            "priority": 41,
+            "material": "Stainless steel",
+            "description": "Access cover"
+          },
+          {
+            "part_id": "APX-18-P11",
+            "length": 650,
+            "width": 320,
+            "quantity": 5,
+            "priority": 43,
+            "material": "Stainless steel",
+            "description": "Reinforcement blank"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2160,
+        "width": 1050,
+        "material": "Stainless steel",
+        "cost_per_sheet": 228.0,
+        "currency": "EUR",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Cedar Works",
+        "created_at": "2026-11-18",
+        "due_date": "2026-12-02",
+        "priority": "normal",
+        "status": "queued",
+        "workload_profile": "high-volume",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-019",
+        "name": "Dust collector panels",
+        "parts": [
+          {
+            "part_id": "APX-19-P01",
+            "length": 550,
+            "width": 130,
+            "quantity": 8,
+            "priority": 40,
+            "material": "Mild steel",
+            "description": "Support bracket"
+          },
+          {
+            "part_id": "APX-19-P02",
+            "length": 160,
+            "width": 130,
+            "quantity": 5,
+            "priority": 37,
+            "material": "Mild steel",
+            "description": "Wear strip"
+          },
+          {
+            "part_id": "APX-19-P03",
+            "length": 470,
+            "width": 120,
+            "quantity": 6,
+            "priority": 55,
+            "material": "Mild steel",
+            "description": "End panel"
+          },
+          {
+            "part_id": "APX-19-P04",
+            "length": 180,
+            "width": 110,
+            "quantity": 6,
+            "priority": 54,
+            "material": "Mild steel",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-19-P05",
+            "length": 730,
+            "width": 200,
+            "quantity": 5,
+            "priority": 46,
+            "material": "Mild steel",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-19-P06",
+            "length": 680,
+            "width": 140,
+            "quantity": 8,
+            "priority": 38,
+            "material": "Mild steel",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-19-P07",
+            "length": 240,
+            "width": 460,
+            "quantity": 7,
+            "priority": 36,
+            "material": "Mild steel",
+            "description": "Mounting plate"
+          },
+          {
+            "part_id": "APX-19-P08",
+            "length": 360,
+            "width": 350,
+            "quantity": 8,
+            "priority": 39,
+            "material": "Mild steel",
+            "description": "Side panel"
+          },
+          {
+            "part_id": "APX-19-P09",
+            "length": 330,
+            "width": 140,
+            "quantity": 7,
+            "priority": 38,
+            "material": "Mild steel",
+            "description": "Access cover"
+          },
+          {
+            "part_id": "APX-19-P10",
+            "length": 250,
+            "width": 390,
+            "quantity": 5,
+            "priority": 52,
+            "material": "Mild steel",
+            "description": "Reinforcement blank"
+          },
+          {
+            "part_id": "APX-19-P11",
+            "length": 660,
+            "width": 190,
+            "quantity": 8,
+            "priority": 56,
+            "material": "Mild steel",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-19-P12",
+            "length": 750,
+            "width": 220,
+            "quantity": 6,
+            "priority": 53,
+            "material": "Mild steel",
+            "description": "Base plate"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2500,
+        "width": 1250,
+        "material": "Mild steel",
+        "cost_per_sheet": 192.4,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": false,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Northstar Equipment",
+        "created_at": "2026-11-19",
+        "due_date": "2026-12-03",
+        "priority": "normal",
+        "status": "queued",
+        "workload_profile": "high-volume",
+        "rotation_sensitive": true,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-020",
+        "name": "Machine base gussets",
+        "parts": [
+          {
+            "part_id": "APX-20-P01",
+            "length": 680,
+            "width": 340,
+            "quantity": 8,
+            "priority": 52,
+            "material": "Aluminium",
+            "description": "Wear strip"
+          },
+          {
+            "part_id": "APX-20-P02",
+            "length": 640,
+            "width": 280,
+            "quantity": 7,
+            "priority": 41,
+            "material": "Aluminium",
+            "description": "End panel"
+          },
+          {
+            "part_id": "APX-20-P03",
+            "length": 680,
+            "width": 250,
+            "quantity": 7,
+            "priority": 43,
+            "material": "Aluminium",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-20-P04",
+            "length": 640,
+            "width": 210,
+            "quantity": 7,
+            "priority": 38,
+            "material": "Aluminium",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-20-P05",
+            "length": 560,
+            "width": 300,
+            "quantity": 7,
+            "priority": 40,
+            "material": "Aluminium",
+            "description": "Frame gusset"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2440,
+        "width": 1220,
+        "material": "Aluminium",
+        "cost_per_sheet": 153.9,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Meridian Fabrication",
+        "created_at": "2026-11-20",
+        "due_date": "2026-11-27",
+        "priority": "high",
+        "status": "queued",
+        "workload_profile": "high-volume",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-021",
+        "name": "Pump station cover set",
+        "parts": [
+          {
+            "part_id": "APX-21-P01",
+            "length": 670,
+            "width": 290,
+            "quantity": 8,
+            "priority": 49,
+            "material": "Stainless steel",
+            "description": "End panel"
+          },
+          {
+            "part_id": "APX-21-P02",
+            "length": 690,
+            "width": 340,
+            "quantity": 7,
+            "priority": 43,
+            "material": "Stainless steel",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-21-P03",
+            "length": 670,
+            "width": 130,
+            "quantity": 7,
+            "priority": 47,
+            "material": "Stainless steel",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-21-P04",
+            "length": 340,
+            "width": 460,
+            "quantity": 6,
+            "priority": 48,
+            "material": "Stainless steel",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-21-P05",
+            "length": 560,
+            "width": 380,
+            "quantity": 6,
+            "priority": 34,
+            "material": "Stainless steel",
+            "description": "Mounting plate"
+          },
+          {
+            "part_id": "APX-21-P06",
+            "length": 200,
+            "width": 470,
+            "quantity": 8,
+            "priority": 44,
+            "material": "Stainless steel",
+            "description": "Side panel"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2000,
+        "width": 1000,
+        "material": "Stainless steel",
+        "cost_per_sheet": 209.76,
+        "currency": "EUR",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Pioneer Process Systems",
+        "created_at": "2026-11-21",
+        "due_date": "2026-12-05",
+        "priority": "normal",
+        "status": "ready",
+        "workload_profile": "high-volume",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-022",
+        "name": "Conveyor transfer plates",
+        "parts": [
+          {
+            "part_id": "APX-22-P01",
+            "length": 750,
+            "width": 210,
+            "quantity": 5,
+            "priority": 37,
+            "material": "Mild steel",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-22-P02",
+            "length": 230,
+            "width": 380,
+            "quantity": 6,
+            "priority": 36,
+            "material": "Mild steel",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-22-P03",
+            "length": 500,
+            "width": 280,
+            "quantity": 6,
+            "priority": 39,
+            "material": "Mild steel",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-22-P04",
+            "length": 650,
+            "width": 290,
+            "quantity": 8,
+            "priority": 44,
+            "material": "Mild steel",
+            "description": "Mounting plate"
+          },
+          {
+            "part_id": "APX-22-P05",
+            "length": 520,
+            "width": 190,
+            "quantity": 8,
+            "priority": 45,
+            "material": "Mild steel",
+            "description": "Side panel"
+          },
+          {
+            "part_id": "APX-22-P06",
+            "length": 530,
+            "width": 130,
+            "quantity": 5,
+            "priority": 46,
+            "material": "Mild steel",
+            "description": "Access cover"
+          },
+          {
+            "part_id": "APX-22-P07",
+            "length": 350,
+            "width": 210,
+            "quantity": 8,
+            "priority": 28,
+            "material": "Mild steel",
+            "description": "Reinforcement blank"
+          },
+          {
+            "part_id": "APX-22-P08",
+            "length": 270,
+            "width": 120,
+            "quantity": 6,
+            "priority": 35,
+            "material": "Mild steel",
+            "description": "Guard section"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2200,
+        "width": 1120,
+        "material": "Mild steel",
+        "cost_per_sheet": 177.6,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Summit Material Handling",
+        "created_at": "2026-11-22",
+        "due_date": "2026-11-24",
+        "priority": "urgent",
+        "status": "in production",
+        "workload_profile": "high-volume",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-023",
+        "name": "Cutting table supports",
+        "parts": [
+          {
+            "part_id": "APX-23-P01",
+            "length": 410,
+            "width": 260,
+            "quantity": 7,
+            "priority": 30,
+            "material": "Aluminium",
+            "description": "Spacer plate"
+          },
+          {
+            "part_id": "APX-23-P02",
+            "length": 270,
+            "width": 120,
+            "quantity": 5,
+            "priority": 39,
+            "material": "Aluminium",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-23-P03",
+            "length": 530,
+            "width": 350,
+            "quantity": 6,
+            "priority": 29,
+            "material": "Aluminium",
+            "description": "Mounting plate"
+          },
+          {
+            "part_id": "APX-23-P04",
+            "length": 270,
+            "width": 140,
+            "quantity": 6,
+            "priority": 41,
+            "material": "Aluminium",
+            "description": "Side panel"
+          },
+          {
+            "part_id": "APX-23-P05",
+            "length": 770,
+            "width": 340,
+            "quantity": 5,
+            "priority": 24,
+            "material": "Aluminium",
+            "description": "Access cover"
+          },
+          {
+            "part_id": "APX-23-P06",
+            "length": 550,
+            "width": 200,
+            "quantity": 5,
+            "priority": 25,
+            "material": "Aluminium",
+            "description": "Reinforcement blank"
+          },
+          {
+            "part_id": "APX-23-P07",
+            "length": 370,
+            "width": 460,
+            "quantity": 6,
+            "priority": 43,
+            "material": "Aluminium",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-23-P08",
+            "length": 380,
+            "width": 340,
+            "quantity": 5,
+            "priority": 37,
+            "material": "Aluminium",
+            "description": "Base plate"
+          },
+          {
+            "part_id": "APX-23-P09",
+            "length": 220,
+            "width": 130,
+            "quantity": 5,
+            "priority": 37,
+            "material": "Aluminium",
+            "description": "Support bracket"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2150,
+        "width": 1100,
+        "material": "Aluminium",
+        "cost_per_sheet": 142.5,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": false,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Harborline Machinery",
+        "created_at": "2026-11-23",
+        "due_date": "2026-12-07",
+        "priority": "normal",
+        "status": "queued",
+        "workload_profile": "high-volume",
+        "rotation_sensitive": true,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-024",
+        "name": "Production cell panels",
+        "parts": [
+          {
+            "part_id": "APX-24-P01",
+            "length": 730,
+            "width": 280,
+            "quantity": 5,
+            "priority": 32,
+            "material": "Stainless steel",
+            "description": "Frame gusset"
+          },
+          {
+            "part_id": "APX-24-P02",
+            "length": 780,
+            "width": 190,
+            "quantity": 6,
+            "priority": 37,
+            "material": "Stainless steel",
+            "description": "Mounting plate"
+          },
+          {
+            "part_id": "APX-24-P03",
+            "length": 480,
+            "width": 420,
+            "quantity": 6,
+            "priority": 34,
+            "material": "Stainless steel",
+            "description": "Side panel"
+          },
+          {
+            "part_id": "APX-24-P04",
+            "length": 670,
+            "width": 100,
+            "quantity": 7,
+            "priority": 28,
+            "material": "Stainless steel",
+            "description": "Access cover"
+          },
+          {
+            "part_id": "APX-24-P05",
+            "length": 660,
+            "width": 240,
+            "quantity": 7,
+            "priority": 28,
+            "material": "Stainless steel",
+            "description": "Reinforcement blank"
+          },
+          {
+            "part_id": "APX-24-P06",
+            "length": 330,
+            "width": 110,
+            "quantity": 8,
+            "priority": 27,
+            "material": "Stainless steel",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-24-P07",
+            "length": 340,
+            "width": 360,
+            "quantity": 6,
+            "priority": 38,
+            "material": "Stainless steel",
+            "description": "Base plate"
+          },
+          {
+            "part_id": "APX-24-P08",
+            "length": 640,
+            "width": 440,
+            "quantity": 6,
+            "priority": 40,
+            "material": "Stainless steel",
+            "description": "Support bracket"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 1760,
+        "width": 900,
+        "material": "Stainless steel",
+        "cost_per_sheet": 237.12,
+        "currency": "EUR",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Cedar Works",
+        "created_at": "2026-11-24",
+        "due_date": "2026-12-22",
+        "priority": "low",
+        "status": "queued",
+        "workload_profile": "high-volume",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    },
+    {
+      "order": {
+        "order_id": "APX-DEMO-V1-025",
+        "name": "Spare parts replenishment",
+        "parts": [
+          {
+            "part_id": "APX-25-P01",
+            "length": 150,
+            "width": 260,
+            "quantity": 5,
+            "priority": 24,
+            "material": "Mild steel",
+            "description": "Mounting plate"
+          },
+          {
+            "part_id": "APX-25-P02",
+            "length": 370,
+            "width": 200,
+            "quantity": 6,
+            "priority": 23,
+            "material": "Mild steel",
+            "description": "Side panel"
+          },
+          {
+            "part_id": "APX-25-P03",
+            "length": 640,
+            "width": 430,
+            "quantity": 5,
+            "priority": 28,
+            "material": "Mild steel",
+            "description": "Access cover"
+          },
+          {
+            "part_id": "APX-25-P04",
+            "length": 380,
+            "width": 120,
+            "quantity": 5,
+            "priority": 18,
+            "material": "Mild steel",
+            "description": "Reinforcement blank"
+          },
+          {
+            "part_id": "APX-25-P05",
+            "length": 190,
+            "width": 410,
+            "quantity": 7,
+            "priority": 26,
+            "material": "Mild steel",
+            "description": "Guard section"
+          },
+          {
+            "part_id": "APX-25-P06",
+            "length": 570,
+            "width": 170,
+            "quantity": 7,
+            "priority": 30,
+            "material": "Mild steel",
+            "description": "Base plate"
+          },
+          {
+            "part_id": "APX-25-P07",
+            "length": 710,
+            "width": 240,
+            "quantity": 6,
+            "priority": 23,
+            "material": "Mild steel",
+            "description": "Support bracket"
+          },
+          {
+            "part_id": "APX-25-P08",
+            "length": 510,
+            "width": 300,
+            "quantity": 8,
+            "priority": 21,
+            "material": "Mild steel",
+            "description": "Wear strip"
+          },
+          {
+            "part_id": "APX-25-P09",
+            "length": 740,
+            "width": 390,
+            "quantity": 8,
+            "priority": 26,
+            "material": "Mild steel",
+            "description": "End panel"
+          },
+          {
+            "part_id": "APX-25-P10",
+            "length": 460,
+            "width": 130,
+            "quantity": 5,
+            "priority": 33,
+            "material": "Mild steel",
+            "description": "Service cover"
+          },
+          {
+            "part_id": "APX-25-P11",
+            "length": 730,
+            "width": 300,
+            "quantity": 8,
+            "priority": 23,
+            "material": "Mild steel",
+            "description": "Spacer plate"
+          }
+        ]
+      },
+      "sheet_config": {
+        "length": 2700,
+        "width": 1310,
+        "material": "Mild steel",
+        "cost_per_sheet": 199.8,
+        "currency": "USD",
+        "spacing": 3,
+        "allow_rotation": true,
+        "max_sheets": 50,
+        "margin": 0
+      },
+      "metadata": {
+        "dataset_id": "apex-industrial-components-v1",
+        "customer_name": "Northstar Equipment",
+        "created_at": "2026-11-25",
+        "due_date": "2026-12-09",
+        "priority": "normal",
+        "status": "ready",
+        "workload_profile": "high-volume",
+        "rotation_sensitive": false,
+        "timestamp_is_simulated": true
+      }
+    }
+  ]
+}

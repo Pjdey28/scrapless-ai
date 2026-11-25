@@ -9,6 +9,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 RATE_LIMITS: dict[tuple[str, str], tuple[int, int]] = {
     ("POST", "/api/v1/optimize"): (6, 60),
+    ("POST", "/api/v1/demo/workspace/optimize"): (6, 60),
     ("POST", "/api/v1/orders/validate"): (15, 60),
     ("POST", "/api/v1/vision/detect"): (5, 60),
     ("POST", "/api/v1/ml/predict-risk"): (20, 60),
@@ -37,6 +38,12 @@ class RateLimitMiddleware:
             and scope["path"].startswith(("/api/v1/optimize/", "/api/v1/reports/"))
         ):
             limit = (60, 60)
+        if (
+            limit is None
+            and scope["method"] == "DELETE"
+            and scope["path"].startswith("/api/v1/demo/workspace/")
+        ):
+            limit = (6, 60)
         if not limit:
             await self.application(scope, receive, send)
             return

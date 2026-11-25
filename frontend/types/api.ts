@@ -14,6 +14,37 @@ export interface Order {
   parts: Part[];
 }
 
+export interface DemoOrderMetadata {
+  dataset_id: string;
+  customer_name: string;
+  created_at: string;
+  due_date: string;
+  priority: "urgent" | "high" | "normal" | "low";
+  status: "in production" | "ready" | "queued";
+  workload_profile: "small-batch" | "mixed-production" | "high-volume";
+  rotation_sensitive: boolean;
+  timestamp_is_simulated: true;
+  sheet_config?: SheetConfig;
+}
+
+export interface SavedOrder extends Order {
+  metadata?: Partial<DemoOrderMetadata>;
+  demo_dataset_id?: string | null;
+}
+
+export interface DemoDatasetRecord {
+  order: Order;
+  sheet_config: SheetConfig;
+  metadata: DemoOrderMetadata;
+}
+
+export interface DemoDataset {
+  dataset_id: string;
+  company_name: string;
+  description: string;
+  records: DemoDatasetRecord[];
+}
+
 export interface SheetConfig {
   length: number;
   width: number;
@@ -95,6 +126,7 @@ export interface CsvValidation {
 
 export interface AnalyticsOverview {
   mode: string;
+  demo_result_count?: number;
   run_count: number;
   sheets_used: number;
   requested_parts: number;
@@ -107,6 +139,7 @@ export interface AnalyticsOverview {
 export interface AnalyticsTrend {
   date: string;
   run_id: string;
+  order_id: string;
   order_name: string;
   algorithm: string;
   material: string;
@@ -115,12 +148,24 @@ export interface AnalyticsTrend {
   utilization: number;
   unused_area: number;
   material_cost: number;
+  demo_dataset_id?: string | null;
+  timestamp_is_simulated?: boolean;
 }
 
 export interface HistoryEntry {
   created_at: string;
   result: AlgorithmResult;
   report_payload?: Record<string, unknown> | null;
+  demo_dataset_id?: string | null;
+}
+
+export interface DemoOptimizationOutcome {
+  order_id: string;
+  success: boolean;
+  run_ids: string[];
+  baseline_valid: boolean | null;
+  optimized_valid: boolean | null;
+  detail: string | null;
 }
 
 export interface RiskPrediction {

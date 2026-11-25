@@ -5,13 +5,18 @@ import { Activity, ArrowRight, Boxes, CircleDollarSign, Layers3, PackageCheck, S
 import { useCallback, useEffect, useState } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { loadAnalytics } from "@/lib/analytics";
+import { api } from "@/lib/api";
+import { loadOrders } from "@/lib/persistence";
+import { DemoWorkspaceManager } from "@/components/demo/demo-workspace-manager";
 import { isDemoMode } from "@/lib/supabase";
 import { KpiCard } from "@/components/ui/kpi-card";
-import type { AnalyticsOverview, AnalyticsTrend } from "@/types/api";
+import type { AnalyticsOverview, AnalyticsTrend, HistoryEntry, SavedOrder } from "@/types/api";
 
 export default function DashboardPage() {
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [trends, setTrends] = useState<AnalyticsTrend[]>([]);
+  const [orders, setOrders] = useState<SavedOrder[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -19,12 +24,20 @@ export default function DashboardPage() {
     setLoading(true);
     setError("");
     try {
-      const { overview: summary, trends: rows } = await loadAnalytics();
+      const [{ overview: summary, trends: rows }, savedOrders, runHistory] = await Promise.all([
+        loadAnalytics(),
+        loadOrders(),
+        api.history(),
+      ]);
       setOverview(summary);
       setTrends(rows);
+      setOrders(savedOrders);
+      setHistory(runHistory);
     } catch (cause) {
       setOverview(null);
       setTrends([]);
+      setOrders([]);
+      setHistory([]);
       setError(cause instanceof Error ? cause.message : "The workspace overview could not be loaded.");
     } finally {
       setLoading(false);
@@ -32,12 +45,26 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    const onWorkspaceUpdate = () => { void refresh(); };
+    window.addEventListener("scrapless:orders-updated", onWorkspaceUpdate);
+    return () => window.removeEventListener("scrapless:orders-updated", onWorkspaceUpdate);
+  }, [refresh]);
+
+  const completedOrderIds = new Set(
+    orders.filter((order) => {
+      const results = history.filter((entry) => entry.result.order_id === order.order_id
+        && entry.result.validation.valid);
+      return results.some((entry) => entry.result.algorithm === "first_fit_decreasing")
+        && results.some((entry) => entry.result.algorithm === "maxrects_bssf");
+    }).map((order) => order.order_id),
+  );
 
   return (
     <>
       <div className="page-header">
         <div><p className="eyebrow">OPERATIONS OVERVIEW</p><h1>Good planning starts here.</h1><p className="page-description">A clear view of your saved optimization work and material performance.</p></div>
-        <Link href="/dashboard/optimize" className="btn btn-primary"><Scissors size={14} /> New optimization</Link>
+        <div className="dashboard-header-actions"><DemoWorkspaceManager /><Link href="/dashboard/optimize" className="btn btn-secondary"><Scissors size={14} /> New optimization</Link></div>
       </div>
       {error && <div className="notice notice-error" role="alert">{error}</div>}
       {loading ? (
@@ -49,6 +76,9 @@ export default function DashboardPage() {
       ) : (
         <>
           <div className="kpi-grid">
+            <KpiCard label="Production orders" value={String(orders.length)} caption="Saved in the current workspace" icon={PackageCheck} />
+            <KpiCard label="Awaiting optimization" value={String(orders.length - completedOrderIds.size)} caption="Needs a valid FFD + MaxRects pair" icon={Activity} />
+            <KpiCard label="Completed order runs" value={String(completedOrderIds.size)} caption="Both layouts independently validated" icon={Layers3} />
             <KpiCard label="Optimization results" value={String(overview.run_count)} caption="Actual algorithm results in history" icon={Activity} />
             <KpiCard label="Stock sheets used" value={String(overview.sheets_used)} caption="Across returned algorithm results" icon={Layers3} />
             <KpiCard label="Requested instances" value={overview.requested_parts.toLocaleString()} caption="Counts each result input" icon={PackageCheck} />
@@ -62,7 +92,7 @@ export default function DashboardPage() {
           </section>
           <div className="dashboard-grid">
             <section className="card">
-              <div className="card-heading"><div><h2>Material utilization</h2><p>{overview.mode}</p></div><span className="status-chip">Actual runs</span></div>
+              <div className="card-heading"><div><h2>Material utilization</h2><p>{overview.mode}</p>{trends.some((item) => item.timestamp_is_simulated) && <p className="table-meta">Demo order dates are simulated historical dates; placements and metrics are computed by the live algorithms.</p>}</div><span className="status-chip">Actual runs</span></div>
               {overview.run_count > 0 && trends.length ? (
                 <div className="chart-area">
                   <ResponsiveContainer width="100%" height="100%"><LineChart data={trends.slice(-20)} margin={{ top: 12, right: 14, bottom: 8, left: 0 }}><XAxis dataKey="date" tick={{ fontSize: 12, fill: "#687269" }} /><YAxis domain={[0, 100]} tick={{ fontSize: 12, fill: "#687269" }} /><Tooltip formatter={(value) => [`${Number(value).toFixed(1)}%`, "Utilization"]} /><Line type="monotone" dataKey="utilization" stroke="#586f1e" strokeWidth={3} dot={{ r: 4, fill: "#c8ed55", stroke: "#556d1d", strokeWidth: 2 }} activeDot={{ r: 6 }} /></LineChart></ResponsiveContainer>

@@ -43,6 +43,18 @@ export default function VisionPage() {
     setPreview(URL.createObjectURL(selected));
   }
 
+  async function chooseSampleImage() {
+    setError("");
+    setResult(null);
+    try {
+      const sample = await api.sampleLayout();
+      setFile(sample);
+      setPreview(URL.createObjectURL(sample));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The sample image could not be loaded.");
+    }
+  }
+
   async function detect() {
     if (!file || busy) return;
     setBusy(true);
@@ -68,6 +80,11 @@ export default function VisionPage() {
         <section className="card">
           <div className="card-heading"><div><h2>Upload and tune detection</h2><p>PNG, JPEG, WEBP, BMP · maximum 5 MB / 4 megapixels</p></div><ScanSearch size={17} color="#28714e" /></div>
           <div style={{ padding: "0 16px 16px" }}>
+            <div className="inline-actions" style={{ marginBottom: 12 }}>
+              <button type="button" className="btn btn-secondary" onClick={() => void chooseSampleImage()}>Use included sample image</button>
+              <a className="btn btn-quiet" href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/demo/sample-layout.png`} download="scrapless-cutting-layout-sample.png">Download sample image</a>
+            </div>
+            <p className="hero-meta">The included fictional sheet image contains separated rectangles for detector testing; OpenCV processes it like any other uploaded image.</p>
             <div className="field"><label htmlFor="vision-file">Material image</label><input id="vision-file" className="input" type="file" accept="image/png,image/jpeg,image/webp,image/bmp" onChange={(event) => chooseFile(event.currentTarget.files?.[0], event.currentTarget)} /></div>
             <div className="field-grid" style={{ marginTop: 14 }}>
               <div className="field"><label htmlFor="threshold">Threshold: {threshold}</label><input id="threshold" type="range" min="0" max="255" value={threshold} onChange={(event) => setThreshold(Number(event.target.value))} /><small>Grayscale binary threshold.</small></div>

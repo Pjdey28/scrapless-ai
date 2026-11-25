@@ -2,6 +2,8 @@ import type {
   AnalyticsOverview,
   AnalyticsTrend,
   CsvValidation,
+  DemoDataset,
+  DemoOptimizationOutcome,
   HistoryEntry,
   ModelEvaluation,
   OptimizationResponse,
@@ -68,6 +70,40 @@ async function request<T>(
 
 export const api = {
   sampleOrder: () => request<Order>("/api/v1/demo/sample-order", undefined, false),
+  demoDataset: () => request<DemoDataset>("/api/v1/demo/dataset", undefined, false),
+  optimizeDemoBatch: (datasetId: string, orderIds: string[]) =>
+    request<{ dataset_id: string; outcomes: DemoOptimizationOutcome[] }>("/api/v1/demo/workspace/optimize", {
+      method: "POST",
+      body: JSON.stringify({ dataset_id: datasetId, order_ids: orderIds }),
+    }),
+  resetDemoWorkspace: (datasetId: string) =>
+    request<{ dataset_id: string; optimization_records_deleted: number }>(
+      `/api/v1/demo/workspace/${encodeURIComponent(datasetId)}`,
+      { method: "DELETE" },
+    ),
+  sampleLayout: async (): Promise<File> => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 30_000);
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/demo/sample-layout.png`, {
+        signal: controller.signal,
+      });
+      if (!response.ok) throw await responseError(response);
+      return new File([await response.blob()], "scrapless-cutting-layout-sample.png", {
+        type: "image/png",
+      });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw new Error("The sample image request timed out. Check the backend and retry.");
+      }
+      if (error instanceof TypeError) {
+        throw new Error(`Could not reach the ScrapLess API at ${API_BASE}.`);
+      }
+      throw error;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  },
   validateCsv: (file: File) => {
     const form = new FormData();
     form.set("file", file);

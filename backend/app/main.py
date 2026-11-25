@@ -21,10 +21,12 @@ from app.auth import (
     supabase_is_configured,
 )
 from app.csv_import import MAX_UPLOAD_BYTES, parse_parts_csv
+from app.demo_data import DEMO_LAYOUT_IMAGE_PATH, load_demo_dataset
 from app.ml.risk import model_evaluation, predict_risk
 from app.optimization.packing import first_fit_decreasing, maxrects_bssf
 from app.persistence import (
     SupabaseStorageError,
+    delete_owned_demo_runs,
     get_owned_run,
     list_owned_runs,
     save_optimization_runs,
@@ -35,6 +37,8 @@ from app.schemas import (
     MAX_ORDER_PART_INSTANCES,
     AlgorithmResult,
     Comparison,
+    DemoOptimizationOutcome,
+    DemoWorkspaceOptimizeRequest,
     ModelEvaluation,
     OptimizationInput,
     OptimizationResponse,
@@ -66,9 +70,11 @@ origins = [
 ]
 MAX_DEMO_RUNS = 200
 _runs: OrderedDict[str, tuple[OptimizationResponse, Order, datetime]] = OrderedDict()
+_demo_run_dataset: dict[str, str] = {}
 _optimization_capacity = threading.BoundedSemaphore(value=2)
 _vision_capacity = threading.BoundedSemaphore(value=2)
 SYNTHETIC_DATA_DISCLAIMER = "Scrap-risk estimates use a reproducible synthetic training dataset and are not industry-validated."
+MAX_DEMO_BATCH_INSTANCES = 500
 
 
 class RequestSizeLimitMiddleware:
@@ -152,7 +158,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
 )
 
@@ -191,6 +197,114 @@ def health() -> dict[str, str]:
 @app.get("/api/v1/demo/sample-order", response_model=Order, tags=["demo"])
 def sample_order() -> Order:
     return _sample_order()
+
+
+@app.get("/api/v1/demo/dataset", tags=["demo"])
+def demo_dataset() -> dict[str, Any]:
+    try:
+        return load_demo_dataset().model_dump(mode="json")
+    except (OSError, ValueError, RuntimeError) as exc:
+        logger.exception("Demo dataset could not be loaded.")
+        raise HTTPException(status_code=503, detail="Demo workspace data is unavailable.") from exc
+
+
+@app.get("/api/v1/demo/sample-layout.png", tags=["demo"])
+def demo_sample_layout() -> Response:
+    try:
+        image = DEMO_LAYOUT_IMAGE_PATH.read_bytes()
+    except OSError as exc:
+        logger.exception("Demo vision sample could not be loaded.")
+        raise HTTPException(status_code=503, detail="Demo vision sample is unavailable.") from exc
+    return Response(
+        image,
+        media_type="image/png",
+        headers={"Content-Disposition": 'attachment; filename="scrapless-cutting-layout-sample.png"'},
+    )
+
+
+@app.post("/api/v1/demo/workspace/optimize", tags=["demo"])
+def optimize_demo_workspace_batch(
+    payload: DemoWorkspaceOptimizeRequest,
+    current_user: AuthenticatedUser | None = Depends(get_current_user),
+) -> dict[str, Any]:
+    try:
+        dataset = load_demo_dataset()
+    except (OSError, ValueError, RuntimeError) as exc:
+        logger.exception("Demo dataset could not be loaded.")
+        raise HTTPException(status_code=503, detail="Demo workspace data is unavailable.") from exc
+    by_id = {record.order.order_id: record for record in dataset.records}
+    records = []
+    for order_id in payload.order_ids:
+        record = by_id.get(order_id)
+        if record is None:
+            raise HTTPException(status_code=400, detail="An order is not part of this demo dataset.")
+        records.append(record)
+    if sum(sum(part.quantity for part in item.order.parts) for item in records) > MAX_DEMO_BATCH_INSTANCES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"A demo optimization batch may contain at most {MAX_DEMO_BATCH_INSTANCES} part instances.",
+        )
+
+    outcomes: list[DemoOptimizationOutcome] = []
+    for record in records:
+        created_at = datetime.combine(record.metadata.created_at, datetime.min.time(), timezone.utc)
+        optimization = OptimizationInput(order=record.order, sheet_config=record.sheet_config)
+        try:
+            response = _execute_optimization(
+                optimization,
+                current_user,
+                created_at,
+                demo_dataset_id=dataset.dataset_id,
+            )
+        except HTTPException as exc:
+            outcomes.append(DemoOptimizationOutcome(
+                order_id=record.order.order_id,
+                success=False,
+                detail=str(exc.detail),
+            ))
+            continue
+        is_valid = response.baseline.validation.valid and response.optimized.validation.valid
+        outcomes.append(DemoOptimizationOutcome(
+            order_id=record.order.order_id,
+            success=is_valid,
+            run_ids=[response.baseline.run_id, response.optimized.run_id],
+            baseline_valid=response.baseline.validation.valid,
+            optimized_valid=response.optimized.validation.valid,
+            detail=None if is_valid else "One or both layouts did not pass geometric validation.",
+        ))
+    return {
+        "dataset_id": dataset.dataset_id,
+        "outcomes": [outcome.model_dump(mode="json") for outcome in outcomes],
+    }
+
+
+@app.delete("/api/v1/demo/workspace/{dataset_id}", tags=["demo"])
+def reset_demo_workspace(
+    dataset_id: str,
+    current_user: AuthenticatedUser | None = Depends(get_current_user),
+) -> dict[str, Any]:
+    try:
+        canonical_id = load_demo_dataset().dataset_id
+    except (OSError, ValueError, RuntimeError) as exc:
+        logger.exception("Demo dataset could not be loaded.")
+        raise HTTPException(status_code=503, detail="Demo workspace data is unavailable.") from exc
+    if dataset_id != canonical_id:
+        raise HTTPException(status_code=400, detail="Unknown demo dataset identifier.")
+
+    if current_user:
+        try:
+            deleted = delete_owned_demo_runs(current_user, dataset_id)
+        except SupabaseStorageError as exc:
+            logger.warning("Demo optimization history reset failed.")
+            raise HTTPException(status_code=503, detail="Demo optimization history could not be reset.") from exc
+    else:
+        matching = [run_id for run_id, marker in _demo_run_dataset.items() if marker == dataset_id]
+        deleted = 0
+        for run_id in matching:
+            _runs.pop(run_id, None)
+            _demo_run_dataset.pop(run_id, None)
+            deleted += 1
+    return {"dataset_id": dataset_id, "optimization_records_deleted": deleted}
 
 
 @app.post("/api/v1/orders/validate", tags=["orders"])
@@ -241,6 +355,16 @@ async def validate_order_file(
 def optimize(
     payload: OptimizationInput,
     current_user: AuthenticatedUser | None = Depends(get_current_user),
+) -> OptimizationResponse:
+    return _execute_optimization(payload, current_user, datetime.now(timezone.utc))
+
+
+def _execute_optimization(
+    payload: OptimizationInput,
+    current_user: AuthenticatedUser | None,
+    created_at: datetime,
+    *,
+    demo_dataset_id: str | None = None,
 ) -> OptimizationResponse:
     if not _optimization_capacity.acquire(blocking=False):
         raise HTTPException(
@@ -295,11 +419,19 @@ def optimize(
             raise HTTPException(
                 status_code=500, detail="Optimization could not be completed."
             ) from exc
-        created_at = datetime.now(timezone.utc)
         if current_user:
-            save_optimization_runs(response, order, current_user)
+            save_optimization_runs(
+                response,
+                order,
+                current_user,
+                demo_dataset_id=demo_dataset_id,
+                created_at=created_at if demo_dataset_id else None,
+            )
         else:
             _remember_runs(response, order, created_at)
+        if demo_dataset_id:
+            for result in (response.baseline, response.optimized):
+                _demo_run_dataset[result.run_id] = demo_dataset_id
         return response
     except SupabaseStorageError as exc:
         logger.warning("Optimization persistence failed.")
@@ -397,7 +529,11 @@ def optimization_history(
     if current_user:
         try:
             return [
-                {"created_at": row["created_at"], "result": row["payload"]}
+                {
+                    "created_at": row["created_at"],
+                    "result": row["payload"],
+                    "demo_dataset_id": row.get("demo_dataset_id"),
+                }
                 for row in list_owned_runs(current_user)
                 if row.get("created_at") and isinstance(row.get("payload"), dict)
             ]
@@ -406,7 +542,11 @@ def optimization_history(
                 status_code=503, detail="Could not retrieve optimization history."
             ) from exc
     entries = {
-        result.run_id: {"result": result, "created_at": created_at}
+        result.run_id: {
+            "result": result,
+            "created_at": created_at,
+            "demo_dataset_id": _demo_run_dataset.get(result.run_id),
+        }
         for response, _, created_at in _runs.values()
         for result in (response.baseline, response.optimized)
     }
@@ -414,6 +554,7 @@ def optimization_history(
         {
             "created_at": value["created_at"].isoformat(),
             "result": value["result"].model_dump(mode="json"),
+            "demo_dataset_id": value["demo_dataset_id"],
         }
         for value in sorted(entries.values(), key=lambda item: item["created_at"], reverse=True)
     ]
@@ -421,7 +562,7 @@ def optimization_history(
 
 def _analysis_entries(
     current_user: AuthenticatedUser | None,
-) -> list[tuple[AlgorithmResult, datetime]]:
+) -> list[tuple[AlgorithmResult, datetime, str | None]]:
     if current_user:
         try:
             rows = list_owned_runs(current_user)
@@ -438,10 +579,11 @@ def _analysis_entries(
                 raise HTTPException(
                     status_code=503, detail="Saved analytics data is invalid."
                 ) from exc
-            entries.append((result, created_at))
+            demo_dataset_id = row.get("demo_dataset_id")
+            entries.append((result, created_at, demo_dataset_id if isinstance(demo_dataset_id, str) else None))
         return entries
     return [
-        (result, created_at)
+        (result, created_at, _demo_run_dataset.get(result.run_id))
         for response, _, created_at in _runs.values()
         for result in (response.baseline, response.optimized)
     ]
@@ -451,18 +593,23 @@ def _analysis_entries(
 def analytics_overview(
     current_user: AuthenticatedUser | None = Depends(get_current_user),
 ) -> dict[str, Any]:
-    values = list(
-        {
-            result.run_id: result
-            for result, _ in _analysis_entries(current_user)
-        }.values()
-    )
+    unique_entries = {
+        result.run_id: (result, demo_dataset_id)
+        for result, _, demo_dataset_id in _analysis_entries(current_user)
+    }
+    values = [entry[0] for entry in unique_entries.values()]
+    demo_results = sum(dataset_id is not None for _, dataset_id in unique_entries.values())
     return {
         "mode": (
-            "Supabase account history"
+            "Supabase account history; includes simulated demo runs"
+            if current_user and demo_results
+            else "Supabase account history"
             if current_user
+            else "development demo; history is in memory only, with simulated demo timestamps"
+            if demo_results
             else "development demo; history is in memory only"
         ),
+        "demo_result_count": demo_results,
         "run_count": len(values),
         "sheets_used": sum(result.metrics.sheets_used for result in values),
         "requested_parts": sum(result.metrics.total_requested_parts for result in values),
@@ -488,19 +635,24 @@ def analytics_trends(
     current_user: AuthenticatedUser | None = Depends(get_current_user),
 ) -> dict[str, Any]:
     entries = {
-        result.run_id: (result, created_at)
-        for result, created_at in _analysis_entries(current_user)
+        result.run_id: (result, created_at, demo_dataset_id)
+        for result, created_at, demo_dataset_id in _analysis_entries(current_user)
     }
     return {
         "mode": (
-            "Supabase account history"
+            "Supabase account history; demo timestamps are simulated"
+            if current_user and any(demo_dataset_id for _, _, demo_dataset_id in entries.values())
+            else "Supabase account history"
             if current_user
+            else "development demo; demo timestamps are simulated"
+            if any(demo_dataset_id for _, _, demo_dataset_id in entries.values())
             else "development demo; history is in memory only"
         ),
         "data": [
             {
                 "date": created_at.date().isoformat(),
                 "run_id": result.run_id,
+                "order_id": result.order_id,
                 "order_name": result.order_name,
                 "algorithm": result.algorithm,
                 "material": result.sheet_config.material,
@@ -509,8 +661,10 @@ def analytics_trends(
                 "utilization": result.metrics.utilization_percent,
                 "unused_area": result.metrics.unused_area,
                 "material_cost": result.metrics.material_cost,
+                "demo_dataset_id": demo_dataset_id,
+                "timestamp_is_simulated": demo_dataset_id is not None,
             }
-            for result, created_at in sorted(entries.values(), key=lambda item: item[1])
+            for result, created_at, demo_dataset_id in sorted(entries.values(), key=lambda item: item[1])
         ],
     }
 

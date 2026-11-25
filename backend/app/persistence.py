@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from typing import Any
 
 import httpx
@@ -41,13 +42,16 @@ def save_optimization_runs(
     response: OptimizationResponse,
     order: Order,
     user: AuthenticatedUser,
+    *,
+    demo_dataset_id: str | None = None,
+    created_at: datetime | None = None,
 ) -> None:
     records = []
     for result, counterpart in (
         (response.baseline, response.optimized),
         (response.optimized, response.baseline),
     ):
-        records.append({
+        record: dict[str, Any] = {
             "run_id": result.run_id,
             "user_id": user.id,
             "order_id": result.order_id,
@@ -64,7 +68,12 @@ def save_optimization_runs(
                 "synthetic_data_disclaimer": response.synthetic_data_disclaimer,
                 "counterpart": counterpart.model_dump(mode="json"),
             },
-        })
+        }
+        if demo_dataset_id:
+            record["demo_dataset_id"] = demo_dataset_id
+        if created_at:
+            record["created_at"] = created_at.isoformat()
+        records.append(record)
     try:
         result = httpx.post(
             _runs_url(),
@@ -111,7 +120,7 @@ def list_owned_runs(user: AuthenticatedUser) -> list[dict[str, Any]]:
             _runs_url(),
             params={
                 "user_id": f"eq.{user.id}",
-                "select": "created_at,order_name,order_id,algorithm,metrics,sheet_config,payload",
+                "select": "created_at,order_name,order_id,algorithm,metrics,sheet_config,payload,demo_dataset_id",
                 "order": "created_at.desc",
                 "limit": str(MAX_HISTORY_ROWS),
             },
@@ -126,3 +135,27 @@ def list_owned_runs(user: AuthenticatedUser) -> list[dict[str, Any]]:
     if not isinstance(records, list):
         raise SupabaseStorageError("Supabase returned an invalid history response.")
     return [record for record in records if isinstance(record, dict)]
+
+
+def delete_owned_demo_runs(user: AuthenticatedUser, dataset_id: str) -> int:
+    try:
+        response = httpx.delete(
+            _runs_url(),
+            params={
+                "user_id": f"eq.{user.id}",
+                "demo_dataset_id": f"eq.{dataset_id}",
+            },
+            headers=_request_headers(user, prefer="return=representation"),
+            timeout=SUPABASE_TIMEOUT_SECONDS,
+        )
+    except httpx.RequestError as exc:
+        raise SupabaseStorageError("Supabase storage is temporarily unavailable.") from exc
+    if not response.is_success:
+        raise SupabaseStorageError("Supabase could not remove the demo optimization runs.")
+    try:
+        deleted = response.json()
+    except ValueError as exc:
+        raise SupabaseStorageError("Supabase returned an invalid demo reset response.") from exc
+    if not isinstance(deleted, list):
+        raise SupabaseStorageError("Supabase returned an invalid demo reset response.")
+    return len(deleted)

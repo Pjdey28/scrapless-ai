@@ -137,7 +137,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           {logoutError && <div className="notice notice-error" role="alert">{logoutError}</div>}
           {children}
         </main>
-        <footer className="app-footer"><span>ScrapLess AI · Predict waste. Optimize cutting.</span><span>{isDemoMode ? "Demo data is not persisted." : "Your account data is protected by Supabase RLS."}</span></footer>
+        <footer className="app-footer"><span>ScrapLess AI · Predict waste. Optimize cutting.</span><span>{isDemoMode ? "Demo orders use browser storage; computed run history is in backend memory." : "Your account data is protected by Supabase RLS."}</span></footer>
       </div>
     </div>
   );

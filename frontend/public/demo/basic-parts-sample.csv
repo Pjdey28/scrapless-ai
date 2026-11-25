@@ -1,0 +1,10 @@
+﻿part_id,length,width,quantity,priority,material,description
+APX-01-P01,330,110,1,103,Mild steel,Mounting plate
+APX-01-P02,560,240,2,96,Mild steel,Side panel
+APX-01-P03,540,130,1,109,Mild steel,Access cover
+APX-01-P04,320,190,1,105,Mild steel,Reinforcement blank
+APX-01-P05,600,430,2,108,Mild steel,Guard section
+APX-01-P06,430,90,1,107,Mild steel,Base plate
+APX-01-P07,690,320,1,95,Mild steel,Support bracket
+APX-01-P08,550,370,1,90,Mild steel,Wear strip
+APX-01-P09,190,370,2,105,Mild steel,End panel

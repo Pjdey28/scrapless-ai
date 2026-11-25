@@ -16,6 +16,7 @@ ScrapLess AI is a manufacturing-planning application for rectangular 2D sheet cu
 - Supabase Auth validated by FastAPI, with user-owned order/run records protected by RLS policies.
 - Durable optimization results and report data stored in the existing RLS-protected Supabase table.
 - Clearly labelled development-only demo mode with bounded, non-durable in-memory analysis history.
+- Idempotent Apex Industrial Components Demo Workspace with 25 fictional orders and real algorithm runs.
 - Vercel, Render, Docker, and CI configuration.
 
 ## Architecture
@@ -38,9 +39,9 @@ See [docs/architecture.md](docs/architecture.md), [docs/algorithm-design.md](doc
 ## Repository
 
 ```text
-backend/                 FastAPI service, optimization, ML, vision, tests
+backend/                 FastAPI service, optimization, ML, vision, tests and deterministic demo data
 frontend/                Next.js dashboard, API client, UI tests, Playwright flow
-supabase/migrations/     PostgreSQL schema and RLS policies
+supabase/migrations/     PostgreSQL schema, RLS policies and incremental demo metadata
 docs/                    Architecture, algorithms, API, deployment
 .github/workflows/       Backend/frontend CI, build, and E2E checks
 render.yaml              Render backend definition
@@ -133,13 +134,19 @@ $env:LOG_LEVEL = "INFO"
 ## Supabase setup
 
 1. Create a Supabase project and configure email/password Auth.
-2. If the initial schema has not already been applied, manually execute [supabase/migrations/202611250001_initial_schema.sql](supabase/migrations/202611250001_initial_schema.sql) in the SQL editor or apply that migration with the Supabase CLI. It already creates `optimization_runs` with `payload`, `report_payload`, `user_id`, and owner-only RLS; no new migration is needed for this change. Do not execute it again if it was already applied.
+2. If the initial schema has not already been applied, manually execute [supabase/migrations/202611250001_initial_schema.sql](supabase/migrations/202611250001_initial_schema.sql) in the SQL editor or apply that migration with the Supabase CLI. It creates `production_orders` and `optimization_runs` with owner-only RLS. Do not execute it again if it was already applied.
 3. Configure the Supabase Auth redirect URLs for local and deployed frontend origins.
 4. Put the same project URL and anon key in `frontend/.env.local` and the backend environment (`SUPABASE_URL`, `SUPABASE_ANON_KEY`).
 5. For Render set `ENVIRONMENT=production`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and the exact `FRONTEND_ORIGIN`. Set the frontend's `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL`, and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in Vercel.
-6. Restart local services after changing environment variables.
+6. Manually apply [supabase/migrations/202611260001_demo_workspace_metadata.sql](supabase/migrations/202611260001_demo_workspace_metadata.sql) after the initial schema if using Demo Workspace in authenticated mode. Restart local services after changing environment variables.
 
-The migration creates `production_orders` and `optimization_runs`, enables RLS, and checks `auth.uid() = user_id`. No mock data is seeded.
+The initial migration creates `production_orders` and `optimization_runs`, enables RLS, and checks `auth.uid() = user_id`. For Demo Workspace metadata and safe demo-only reset, also manually apply `supabase/migrations/202611260001_demo_workspace_metadata.sql` after the initial migration. This adds nullable dataset markers and production-order metadata; it does not alter RLS or insert data. Do not execute migrations through the application.
+
+## Demo Workspace, CSV, and Vision sample
+
+Use the **Load Demo Workspace** action on the dashboard or Settings to insert 25 deterministic fictional production orders and run the existing FFD and MaxRects BSSF algorithms. Both layouts are validated by the existing geometry validator. The loader is idempotent, reports progress/failures, and offers reset scoped to the dataset marker only. In development mode orders persist in browser local storage while computed optimization results remain in bounded backend memory; authenticated mode uses the signed-in user's Supabase account and owner-scoped RLS. Simulated order/history dates are labelled; computed metrics are not fabricated.
+
+See [docs/demo-workspace.md](docs/demo-workspace.md) for mode differences, manual migration, dataset statistics, reset behavior, CSV-import steps, Vision sample usage, read-only Supabase verification, and limitations.
 
 ## Algorithms and metrics
 

@@ -24,12 +24,13 @@ export default function HistoryPage() {
       try {
         if (supabase) {
           const { data, error: queryError } = await supabase.from("optimization_runs")
-            .select("created_at,payload")
+            .select("created_at,payload,demo_dataset_id")
             .order("created_at", { ascending: false });
           if (queryError) throw queryError;
           if (active) setItems((data ?? []).map((row) => ({
             created_at: row.created_at,
             result: row.payload as AlgorithmResult,
+            demo_dataset_id: row.demo_dataset_id,
           })));
         } else {
           if (active) setItems(await api.history());
@@ -112,7 +113,7 @@ export default function HistoryPage() {
                   <td><input type="checkbox" aria-label={`Compare ${result.run_id}`} checked={compareIds.includes(result.run_id)} disabled={!compareIds.includes(result.run_id) && compareIds.length >= 2} onChange={(event) => setCompareIds((current) => event.target.checked ? [...current, result.run_id] : current.filter((id) => id !== result.run_id))} /></td>
                   <td><strong>{result.order_name}</strong><br /><span className="table-meta">{result.run_id.slice(0, 14)}…</span></td>
                   <td>{result.algorithm === "maxrects_bssf" ? "MaxRects BSSF" : "First Fit Decreasing"}</td>
-                  <td>{new Date(created_at).toLocaleString()}</td>
+                  <td>{new Date(created_at).toLocaleString()}{entry.demo_dataset_id && <><br /><span className="table-meta">Demo · simulated history date</span></>}</td>
                   <td>{result.metrics.sheets_used}</td>
                   <td>{result.validation.valid ? `${result.metrics.utilization_percent.toFixed(1)}%` : "Withheld"}</td>
                   <td><span className={`status-chip ${result.validation.valid ? "" : "invalid-chip"}`}>{result.validation.valid ? "Valid" : "Invalid"}</span></td>

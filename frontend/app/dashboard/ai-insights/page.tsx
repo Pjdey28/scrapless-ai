@@ -4,16 +4,16 @@ import { AlertTriangle, BrainCircuit, CircleHelp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api } from "@/lib/api";
-import { supabase } from "@/lib/supabase";
-import type { ModelEvaluation, Order, Part, RiskPrediction } from "@/types/api";
+import { loadOrders } from "@/lib/persistence";
+import type { ModelEvaluation, Order, RiskPrediction, SavedOrder, SheetConfig } from "@/types/api";
 
-const sampleSheet = {
+const sampleSheet: SheetConfig = {
   length: 2440, width: 1220, material: "MDF", cost_per_sheet: 45, currency: "USD",
   spacing: 3, allow_rotation: true, max_sheets: 50, margin: 0,
 };
 
 export default function AiInsightsPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<SavedOrder[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [risk, setRisk] = useState<RiskPrediction | null>(null);
   const [evaluation, setEvaluation] = useState<ModelEvaluation | null>(null);
@@ -33,19 +33,14 @@ export default function AiInsightsPage() {
       const [sampleResult, modelResult, savedResult] = await Promise.allSettled([
         api.sampleOrder(),
         api.modelEvaluation(),
-        supabase
-        ? supabase.from("production_orders").select("order_id,name,parts").then(({ data, error: loadError }) => {
-          if (loadError) throw loadError;
-          return (data ?? []).map((row) => ({ order_id: row.order_id, name: row.name, parts: row.parts as Part[] }));
-        })
-        : Promise.resolve([] as Order[]),
+        loadOrders(),
       ]);
       if (!active) return;
 
       const sample = sampleResult.status === "fulfilled" ? sampleResult.value : null;
       const saved = savedResult.status === "fulfilled" ? savedResult.value : [];
       const allOrders = [
-        ...(sample ? [sample] : []),
+        ...(sample ? [{ ...sample, metadata: { sheet_config: sampleSheet } }] : []),
         ...saved.filter((item) => item.order_id !== sample?.order_id),
       ];
       setOrders(allOrders);
@@ -72,7 +67,8 @@ export default function AiInsightsPage() {
       const selectedOrder = allOrders[0];
       if (selectedOrder) {
         try {
-          setRisk(await api.risk(selectedOrder, sampleSheet));
+          const order: Order = { order_id: selectedOrder.order_id, name: selectedOrder.name, parts: selectedOrder.parts };
+          setRisk(await api.risk(order, selectedOrder.metadata?.sheet_config ?? sampleSheet));
         } catch (cause) {
           if (active) setError(cause instanceof Error ? cause.message : "Risk assessment failed.");
         }
@@ -90,7 +86,8 @@ export default function AiInsightsPage() {
     setRisk(null);
     setError("");
     try {
-      setRisk(await api.risk(order, sampleSheet));
+      const requestOrder: Order = { order_id: order.order_id, name: order.name, parts: order.parts };
+      setRisk(await api.risk(requestOrder, order.metadata?.sheet_config ?? sampleSheet));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Risk assessment failed.");
     } finally {
@@ -100,6 +97,17 @@ export default function AiInsightsPage() {
 
   const importance = risk?.feature_importance ?? [];
   const featureLabel = (name: string) => name.replaceAll("_", " ");
+  const selectedOrder = orders.find((order) => order.order_id === selectedId);
+  const selectedSheet = selectedOrder?.metadata?.sheet_config ?? sampleSheet;
+  const oversizedParts = selectedOrder?.parts.filter((part) => {
+    const fitsWithoutRotation = part.length <= selectedSheet.length && part.width <= selectedSheet.width;
+    const fitsRotated = part.width <= selectedSheet.length && part.length <= selectedSheet.width;
+    return !fitsWithoutRotation && !(selectedSheet.allow_rotation && fitsRotated);
+  }) ?? [];
+  const demandInSheetAreas = selectedOrder
+    ? selectedOrder.parts.reduce((sum, part) => sum + part.length * part.width * part.quantity, 0)
+      / (selectedSheet.length * selectedSheet.width)
+    : 0;
 
   return (
     <>
@@ -109,6 +117,15 @@ export default function AiInsightsPage() {
       </div>
       <div className="notice"><AlertTriangle size={15} /> Model scores are not calibrated real-world probabilities and are not industry-validated.</div>
       {error && <div className="notice notice-error" role="alert">{error}</div>}
+      {selectedOrder && <section className="card" style={{ marginBottom: 14 }}>
+        <div className="card-heading"><div><h2>Order and stock checks</h2><p>Deterministic checks calculated from the selected order, not ML recommendations.</p></div></div>
+        <div style={{ padding: "0 16px 16px" }}>
+          {oversizedParts.length
+            ? <div className="notice notice-error" role="alert">These parts cannot fit the selected sheet with the current rotation rule: {oversizedParts.map((part) => part.part_id).join(", ")}.</div>
+            : <div className="notice notice-success">Every requested part dimension fits at least one allowed orientation on the {selectedSheet.material} sheet.</div>}
+          <p className="hero-meta">Aggregate part area is {demandInSheetAreas.toFixed(2)} single-sheet areas before kerf, margins, and geometric packing. This is a workload indicator, not predicted utilization or a substitute for the validated layouts.</p>
+        </div>
+      </section>}
       <div className="dashboard-grid">
         <section className="card">
           <div className="card-heading"><div><h2>Order risk assessment</h2><p>Feature-based synthetic model result</p></div><BrainCircuit size={17} color="#28714e" /></div>
