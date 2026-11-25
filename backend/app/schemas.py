@@ -3,19 +3,33 @@ from __future__ import annotations
 from typing import Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+MAX_ORDER_PART_TYPES = 250
+MAX_ORDER_PART_INSTANCES = 500
 
 
 class Part(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     part_id: str = Field(min_length=1, max_length=100)
-    length: float = Field(gt=0, allow_inf_nan=False)
-    width: float = Field(gt=0, allow_inf_nan=False)
-    quantity: int = Field(gt=0, le=100_000)
-    priority: int = Field(default=0, ge=0)
-    material: str | None = Field(default=None, max_length=100)
+    length: float = Field(gt=0, le=100_000, allow_inf_nan=False)
+    width: float = Field(gt=0, le=100_000, allow_inf_nan=False)
+    quantity: int = Field(gt=0, le=MAX_ORDER_PART_INSTANCES)
+    priority: int = Field(default=0, ge=0, le=1_000_000)
+    material: str | None = Field(
+        default=None,
+        max_length=100,
+        description="When omitted, the selected stock-sheet material is assumed.",
+    )
     description: str | None = Field(default=None, max_length=500)
+
+    @field_validator("material", mode="before")
+    @classmethod
+    def normalize_material(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.strip() or None
+        return value
 
 
 class Order(BaseModel):
@@ -23,30 +37,40 @@ class Order(BaseModel):
 
     order_id: str = Field(min_length=1, max_length=100)
     name: str = Field(min_length=1, max_length=200)
-    parts: list[Part] = Field(min_length=1, max_length=10_000)
+    parts: list[Part] = Field(min_length=1, max_length=MAX_ORDER_PART_TYPES)
 
     @model_validator(mode="after")
     def unique_part_ids(self) -> Order:
         identifiers = [part.part_id for part in self.parts]
         if len(identifiers) != len(set(identifiers)):
             raise ValueError("part_id values must be unique within an order.")
-        if sum(part.quantity for part in self.parts) > 100_000:
-            raise ValueError("An order may contain at most 100,000 part instances.")
+        if sum(part.quantity for part in self.parts) > MAX_ORDER_PART_INSTANCES:
+            raise ValueError(
+                f"An order may contain at most {MAX_ORDER_PART_INSTANCES:,} part instances."
+            )
         return self
 
 
 class SheetConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    length: float = Field(gt=0, allow_inf_nan=False)
-    width: float = Field(gt=0, allow_inf_nan=False)
+    length: float = Field(gt=0, le=100_000, allow_inf_nan=False)
+    width: float = Field(gt=0, le=100_000, allow_inf_nan=False)
     material: str = Field(min_length=1, max_length=100)
-    cost_per_sheet: float = Field(default=0, ge=0, allow_inf_nan=False)
+    cost_per_sheet: float = Field(default=0, ge=0, le=1_000_000_000, allow_inf_nan=False)
     currency: str = Field(default="USD", min_length=3, max_length=3, pattern=r"^[A-Z]{3}$")
-    spacing: float = Field(default=0, ge=0, allow_inf_nan=False)
+    spacing: float = Field(default=0, ge=0, le=100_000, allow_inf_nan=False)
     allow_rotation: bool = True
-    max_sheets: int = Field(default=100, ge=1, le=10_000)
-    margin: float = Field(default=0, ge=0, allow_inf_nan=False)
+    max_sheets: int = Field(default=100, ge=1, le=200)
+    margin: float = Field(default=0, ge=0, le=100_000, allow_inf_nan=False)
+
+    @field_validator("material")
+    @classmethod
+    def normalize_material(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Stock-sheet material is required.")
+        return normalized
 
     @model_validator(mode="after")
     def margin_fits_sheet(self) -> SheetConfig:
@@ -157,6 +181,29 @@ class OptimizationInput(BaseModel):
 
     order: Order
     sheet_config: SheetConfig
+
+    @model_validator(mode="after")
+    def compatible_materials(self) -> OptimizationInput:
+        validate_material_compatibility(self.order, self.sheet_config)
+        return self
+
+
+def validate_material_compatibility(order: Order, sheet: SheetConfig) -> None:
+    sheet_material = sheet.material.casefold()
+    incompatible = sorted(
+        {
+            part.material
+            for part in order.parts
+            if part.material is not None and part.material.casefold() != sheet_material
+        },
+        key=str.casefold,
+    )
+    if incompatible:
+        materials = ", ".join(incompatible)
+        raise ValueError(
+            f"Part material(s) {materials} do not match selected stock-sheet material "
+            f"'{sheet.material}'. Use one material per optimization."
+        )
 
 
 def new_run_id() -> str:

@@ -13,8 +13,9 @@ ScrapLess AI is a manufacturing-planning application for rectangular 2D sheet cu
 - Deterministic First Fit Decreasing shelf baseline and MaxRects Best Short Side Fit.
 - Independent geometry/quantity/spacing validation before results are labelled valid.
 - Physical area, stock area, utilization, unused-area proxy, sheet cost, runtime, and unplaced-part metrics.
-- Supabase Auth with user-owned order/run records protected by RLS policies.
-- Clearly labelled no-credentials demo mode with a backend sample order and non-durable in-memory analysis history.
+- Supabase Auth validated by FastAPI, with user-owned order/run records protected by RLS policies.
+- Durable optimization results and report data stored in the existing RLS-protected Supabase table.
+- Clearly labelled development-only demo mode with bounded, non-durable in-memory analysis history.
 - Vercel, Render, Docker, and CI configuration.
 
 ## Architecture
@@ -27,7 +28,8 @@ frontend/ (Next.js App Router, React, TypeScript, Tailwind)
   │                         ├─ synthetic scikit-learn risk model
   │                         ├─ OpenCV image detection
   │                         └─ JSON / CSV reports
-  └─ Supabase browser client (anon key + RLS)
+  ├─ Supabase browser client (anon key + RLS)
+  └─ bearer token ──> FastAPI ──> Supabase Auth user validation + PostgREST (same user token)
                               └─ Supabase PostgreSQL / Auth
 ```
 
@@ -105,7 +107,19 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
-Leave Supabase values empty for a demo. Demo authentication is not simulated: dashboard access is labelled as demo, order edits are in-memory for that page session, and backend history clears on restart. When configured, the frontend uses Supabase Auth and the anon key to access user rows protected by RLS. **Never add a service-role key to the frontend.** The app does not require a service-role key.
+Backend settings are in `backend/.env.example`:
+
+```dotenv
+ENVIRONMENT=development
+FRONTEND_ORIGIN=http://localhost:3000
+LOG_LEVEL=INFO
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+```
+
+In development only, leave both Supabase backend settings empty to use the local demo. Demo endpoints are unauthenticated, run history is capped in process memory, and it is not suitable for exposing as a production service. A partial Supabase configuration fails closed. Production startup requires `ENVIRONMENT=production`, `SUPABASE_URL` and `SUPABASE_ANON_KEY`; the health endpoint reports unavailable if configuration is incomplete.
+
+When Supabase is configured, the frontend sends the signed-in access token to user-specific FastAPI routes. FastAPI validates it with Supabase Auth's `/auth/v1/user` endpoint and forwards that same user token (never a service-role key) to Supabase PostgREST. The `optimization_runs` table's RLS policy enforces `auth.uid() = user_id`. The backend anon key is a public project key, not a service-role credential. **Never use a service-role key in the frontend or Render API configuration.**
 
 Set backend variables in the backend process:
 
@@ -113,15 +127,17 @@ Set backend variables in the backend process:
 $env:FRONTEND_ORIGIN = "http://localhost:3000"
 $env:ENVIRONMENT = "development"
 $env:LOG_LEVEL = "INFO"
+# For authenticated local use, set SUPABASE_URL and SUPABASE_ANON_KEY to your project values.
 ```
 
 ## Supabase setup
 
 1. Create a Supabase project and configure email/password Auth.
-2. Apply [supabase/migrations/202611250001_initial_schema.sql](supabase/migrations/202611250001_initial_schema.sql) in the SQL editor or with the Supabase CLI.
+2. If the initial schema has not already been applied, manually execute [supabase/migrations/202611250001_initial_schema.sql](supabase/migrations/202611250001_initial_schema.sql) in the SQL editor or apply that migration with the Supabase CLI. It already creates `optimization_runs` with `payload`, `report_payload`, `user_id`, and owner-only RLS; no new migration is needed for this change. Do not execute it again if it was already applied.
 3. Configure the Supabase Auth redirect URLs for local and deployed frontend origins.
-4. Put the project URL and anon key in `frontend/.env.local`.
-5. Restart Next.js after changing environment variables.
+4. Put the same project URL and anon key in `frontend/.env.local` and the backend environment (`SUPABASE_URL`, `SUPABASE_ANON_KEY`).
+5. For Render set `ENVIRONMENT=production`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and the exact `FRONTEND_ORIGIN`. Set the frontend's `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL`, and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in Vercel.
+6. Restart local services after changing environment variables.
 
 The migration creates `production_orders` and `optimization_runs`, enables RLS, and checks `auth.uid() = user_id`. No mock data is seeded.
 
@@ -140,7 +156,16 @@ Spacing uses a documented positive-x/positive-y reserve convention. It constrain
 
 The RandomForest model uses a fixed-seed synthetic training dataset with held-out evaluation metrics and feature importance. Its class/score are advisory, are not a calibrated real-world probability, and cannot override packing or validation.
 
-The OpenCV workflow accepts real PNG, JPEG, WEBP, or BMP images, returns contour bounding boxes in pixels, and displays the annotated image. Detection is experimental; lighting, reflections, touching pieces, shadows, and perspective can affect candidates. Millimetre dimensions require calibration.
+The OpenCV workflow accepts real PNG, JPEG, WEBP, or BMP images up to 5 MiB and 4 megapixels, returns contour bounding boxes in pixels, and displays the annotated image. Detection is experimental; lighting, reflections, touching pieces, shadows, and perspective can affect candidates. Millimetre dimensions require calibration.
+
+## API security and resource limits
+
+- Production user-specific API routes require a bearer access token verified by Supabase Auth. Optimization runs, history, analytics, risk prediction, CSV validation, vision detection, run retrieval, and report downloads are account-scoped; the `optimization_runs` RLS policy remains the database authorization boundary.
+- The public health endpoint and built-in sample order do not expose user data. The synthetic-model evaluation endpoint is public and rate-limited.
+- POST request bodies are limited to 1 MiB JSON, 1 MiB CSV files (multipart overhead is separately bounded), or 5 MiB vision images. CSV supports at most 250 rows. Orders accept at most 250 part types and 500 total instances; sheet plans are capped at 200 sheets.
+- Process-local rate limits are 6 optimization, 15 CSV validation, 5 vision, and 20 risk requests per IP per minute. Optimization and vision work each have two concurrent slots. The rate limiter is process-local, not distributed: multi-instance deployments need an edge/WAF or shared rate-limit service before scaling.
+- Development demo mode deliberately omits backend authentication only when no Supabase settings are present and `ENVIRONMENT` is not production. Do not expose it to untrusted networks.
+- API logs do not include request bodies, bearer tokens, Supabase response bodies, or order identifiers. A Supabase or network outage causes the API to fail the authenticated operation rather than return an unsaved success response.
 
 ## Tests and quality checks
 
@@ -163,7 +188,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-The Playwright flow starts the FastAPI demo service and Next.js, loads the sample order, runs both algorithms, checks validation/layouts, downloads a placement report, and inspects history. Supabase isolation and live account workflows require a separately configured project and are not represented as locally verified.
+The Playwright flow starts the FastAPI development demo service and Next.js, loads the sample order, runs both algorithms, checks validation/layouts, downloads a placement report, and inspects history. Supabase token validation, RLS isolation, and live account workflows require a separately configured project and are not represented as live-service verified.
 
 CI is defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 

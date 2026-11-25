@@ -6,7 +6,15 @@ from typing import Literal
 
 from app.metrics import calculate_metrics
 from app.optimization.validation import validate_layout
-from app.schemas import AlgorithmResult, Order, Part, Placement, SheetConfig, new_run_id
+from app.schemas import (
+    AlgorithmResult,
+    Order,
+    Part,
+    Placement,
+    SheetConfig,
+    new_run_id,
+    validate_material_compatibility,
+)
 
 
 @dataclass(frozen=True)
@@ -94,6 +102,7 @@ def _result(
 
 def first_fit_decreasing(order: Order, sheet: SheetConfig) -> AlgorithmResult:
     """Deterministic area-descending shelf packing; shelves advance from the lower-left."""
+    validate_material_compatibility(order, sheet)
     started = perf_counter()
     usable_width = sheet.width - 2 * sheet.margin
     usable_height = sheet.length - 2 * sheet.margin
@@ -259,6 +268,7 @@ def _split_free_rectangles(free_rects: list[FreeRect], used: FreeRect) -> list[F
 
 def maxrects_bssf(order: Order, sheet: SheetConfig) -> AlgorithmResult:
     """MaxRects Best Short Side Fit heuristic; it does not guarantee global optimality."""
+    validate_material_compatibility(order, sheet)
     started = perf_counter()
     usable_width = sheet.width - 2 * sheet.margin
     usable_height = sheet.length - 2 * sheet.margin

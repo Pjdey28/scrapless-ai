@@ -7,13 +7,20 @@ import cv2
 import numpy as np
 from PIL import Image, UnidentifiedImageError
 
-MAX_IMAGE_BYTES = 8 * 1024 * 1024
-MAX_IMAGE_PIXELS = 20_000_000
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
+MAX_IMAGE_PIXELS = 4_000_000
+MAX_DETECTION_REGIONS = 2_000
 
 
 def detect_rectangles(
     contents: bytes, threshold: int = 180, minimum_area: int = 400
 ) -> dict[str, object]:
+    if not 0 <= threshold <= 255:
+        raise ValueError("Threshold must be between 0 and 255.")
+    if not 1 <= minimum_area <= MAX_IMAGE_PIXELS:
+        raise ValueError(
+            f"Minimum contour area must be between 1 and {MAX_IMAGE_PIXELS:,} pixels."
+        )
     if not contents or len(contents) > MAX_IMAGE_BYTES:
         raise ValueError(
             f"Image must be non-empty and no larger than {MAX_IMAGE_BYTES // (1024 * 1024)} MB."
@@ -23,7 +30,7 @@ def detect_rectangles(
             if image.format not in {"PNG", "JPEG", "WEBP", "BMP"}:
                 raise ValueError("Unsupported image format; use PNG, JPEG, WEBP, or BMP.")
             if image.width * image.height > MAX_IMAGE_PIXELS:
-                raise ValueError("Image dimensions exceed the 20-megapixel processing limit.")
+                raise ValueError("Image dimensions exceed the 4-megapixel processing limit.")
             rgb = np.asarray(image.convert("RGB"))
     except (UnidentifiedImageError, OSError) as exc:
         raise ValueError("Uploaded file is not a readable image.") from exc
@@ -41,6 +48,11 @@ def detect_rectangles(
         x, y, width, height = cv2.boundingRect(contour)
         if width < 2 or height < 2:
             continue
+        if len(regions) >= MAX_DETECTION_REGIONS:
+            raise ValueError(
+                f"Image produced more than {MAX_DETECTION_REGIONS:,} candidate regions. "
+                "Increase minimum contour area or use a simpler image."
+            )
         regions.append(
             {
                 "x": int(x),

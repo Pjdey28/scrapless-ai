@@ -8,8 +8,8 @@ from pydantic import ValidationError
 
 from app.schemas import Part
 
-MAX_UPLOAD_BYTES = 2 * 1024 * 1024
-MAX_ROWS = 10_000
+MAX_UPLOAD_BYTES = 1 * 1024 * 1024
+MAX_ROWS = 250
 REQUIRED_COLUMNS = {"part_id", "length", "width", "quantity"}
 
 

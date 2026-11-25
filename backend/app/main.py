@@ -2,19 +2,37 @@ from __future__ import annotations
 
 import logging
 import os
-from collections import Counter
+import threading
+from collections import Counter, OrderedDict
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, AsyncGenerator
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, Response
+from pydantic import ValidationError
+from starlette.concurrency import run_in_threadpool
 
+from app.auth import (
+    AuthenticatedUser,
+    get_current_user,
+    require_production_configuration,
+    supabase_is_configured,
+)
 from app.csv_import import MAX_UPLOAD_BYTES, parse_parts_csv
 from app.ml.risk import model_evaluation, predict_risk
 from app.optimization.packing import first_fit_decreasing, maxrects_bssf
+from app.persistence import (
+    SupabaseStorageError,
+    get_owned_run,
+    list_owned_runs,
+    save_optimization_runs,
+)
+from app.rate_limit import RateLimitMiddleware
 from app.reports import build_json_report, placements_csv
 from app.schemas import (
+    MAX_ORDER_PART_INSTANCES,
     AlgorithmResult,
     Comparison,
     ModelEvaluation,
@@ -24,20 +42,32 @@ from app.schemas import (
     Part,
     RiskPrediction,
 )
-from app.vision.detector import MAX_IMAGE_BYTES, detect_rectangles
+from app.vision.detector import MAX_IMAGE_BYTES, MAX_IMAGE_PIXELS, detect_rectangles
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger("scrapless")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
+    require_production_configuration()
+    yield
+
+
 app = FastAPI(
-    title="ScrapLess AI API", version="0.1.0", description="Rectangular sheet-cutting analysis API."
+    title="ScrapLess AI API",
+    version="0.1.0",
+    description="Rectangular sheet-cutting analysis API.",
+    lifespan=lifespan,
 )
 origins = [
     origin.strip()
     for origin in os.getenv("FRONTEND_ORIGIN", "http://localhost:3000").split(",")
     if origin.strip()
 ]
-# In-process storage is intentionally demo-only and is cleared on restart.
-_runs: dict[str, tuple[OptimizationResponse, Order, datetime]] = {}
+MAX_DEMO_RUNS = 200
+_runs: OrderedDict[str, tuple[OptimizationResponse, Order, datetime]] = OrderedDict()
+_optimization_capacity = threading.BoundedSemaphore(value=2)
+_vision_capacity = threading.BoundedSemaphore(value=2)
 SYNTHETIC_DATA_DISCLAIMER = "Scrap-risk estimates use a reproducible synthetic training dataset and are not industry-validated."
 
 
@@ -51,7 +81,12 @@ class RequestSizeLimitMiddleware:
             return
 
         path = scope["path"]
-        limit = MAX_IMAGE_BYTES if path.endswith("/vision/detect") else MAX_UPLOAD_BYTES
+        if path.endswith("/vision/detect"):
+            limit = MAX_IMAGE_BYTES + 64 * 1024
+        elif path.endswith("/orders/validate"):
+            limit = MAX_UPLOAD_BYTES + 64 * 1024
+        else:
+            limit = 1024 * 1024
         content_length = next(
             (
                 value
@@ -111,6 +146,7 @@ class RequestSizeLimitMiddleware:
         await send({"type": "http.response.body", "body": message})
 
 
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestSizeLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
@@ -135,7 +171,21 @@ def _sample_order() -> Order:
 
 @app.get("/api/health", tags=["health"])
 def health() -> dict[str, str]:
-    return {"status": "ok", "mode": "demo/in-memory"}
+    configured = supabase_is_configured()
+    has_partial_config = bool(os.getenv("SUPABASE_URL", "").strip()) != bool(
+        os.getenv("SUPABASE_ANON_KEY", "").strip()
+    )
+    if has_partial_config or (
+        os.getenv("ENVIRONMENT", "development").lower() == "production" and not configured
+    ):
+        raise HTTPException(
+            status_code=503,
+            detail="Supabase authentication and persistence configuration is incomplete.",
+        )
+    return {
+        "status": "ok",
+        "mode": "authenticated-persistent" if configured else "development-demo",
+    }
 
 
 @app.get("/api/v1/demo/sample-order", response_model=Order, tags=["demo"])
@@ -144,7 +194,11 @@ def sample_order() -> Order:
 
 
 @app.post("/api/v1/orders/validate", tags=["orders"])
-async def validate_order_file(file: UploadFile = File(...)) -> dict[str, Any]:
+async def validate_order_file(
+    file: UploadFile = File(...),
+    current_user: AuthenticatedUser | None = Depends(get_current_user),
+) -> dict[str, Any]:
+    del current_user
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=415, detail="Upload a .csv file.")
     content = await file.read(MAX_UPLOAD_BYTES + 1)
@@ -157,6 +211,24 @@ async def validate_order_file(file: UploadFile = File(...)) -> dict[str, Any]:
     )
     for duplicate in duplicate_ids:
         row_errors.append({"row": None, "errors": [{"msg": f"Duplicate part_id: {duplicate}."}]})
+    if len(parts) > 250:
+        row_errors.append(
+            {"row": None, "errors": [{"msg": "CSV may contain at most 250 part types."}]}
+        )
+    if sum(part.quantity for part in parts) > MAX_ORDER_PART_INSTANCES:
+        row_errors.append(
+            {
+                "row": None,
+                "errors": [
+                    {
+                        "msg": (
+                            "CSV may contain at most "
+                            f"{MAX_ORDER_PART_INSTANCES:,} part instances."
+                        )
+                    }
+                ],
+            }
+        )
     return {
         "valid": not row_errors,
         "accepted_rows": len(parts),
@@ -166,85 +238,173 @@ async def validate_order_file(file: UploadFile = File(...)) -> dict[str, Any]:
 
 
 @app.post("/api/v1/optimize", response_model=OptimizationResponse, tags=["optimization"])
-def optimize(payload: OptimizationInput) -> OptimizationResponse:
+def optimize(
+    payload: OptimizationInput,
+    current_user: AuthenticatedUser | None = Depends(get_current_user),
+) -> OptimizationResponse:
+    if not _optimization_capacity.acquire(blocking=False):
+        raise HTTPException(
+            status_code=503,
+            detail="Optimization capacity is currently full; try again shortly.",
+        )
     order = payload.order
     sheet = payload.sheet_config
     try:
-        baseline = first_fit_decreasing(order, sheet)
-        optimized = maxrects_bssf(order, sheet)
-        if not baseline.validation.valid or not optimized.validation.valid:
-            logger.warning("Layout validation failed for order %s", order.order_id)
-        improvements_valid = (
-            baseline.validation.valid
-            and optimized.validation.valid
-            and optimized.metrics.unplaced_parts <= baseline.metrics.unplaced_parts
-        )
-        comparison = Comparison(
-            sheet_count_difference=optimized.metrics.sheets_used - baseline.metrics.sheets_used,
-            utilization_improvement_percentage_points=(
-                optimized.metrics.utilization_percent - baseline.metrics.utilization_percent
-                if improvements_valid
-                else None
-            ),
-            estimated_unused_area_reduction=(
-                baseline.metrics.unused_area - optimized.metrics.unused_area
-                if improvements_valid
-                else None
-            ),
-            estimated_material_cost_difference=(
-                optimized.metrics.material_cost - baseline.metrics.material_cost
-                if improvements_valid
-                else None
-            ),
-            unplaced_part_difference=optimized.metrics.unplaced_parts
-            - baseline.metrics.unplaced_parts,
-            runtime_difference_ms=optimized.runtime_ms - baseline.runtime_ms,
-            improvements_valid=improvements_valid,
-        )
-        response = OptimizationResponse(
-            baseline=baseline,
-            optimized=optimized,
-            comparison=comparison,
-            risk_prediction=predict_risk(order, sheet),
-            synthetic_data_disclaimer=SYNTHETIC_DATA_DISCLAIMER,
-        )
-    except Exception as exc:
-        logger.exception("Optimization failed for order %s", order.order_id)
-        raise HTTPException(status_code=500, detail="Optimization could not be completed.") from exc
-    created_at = datetime.now(timezone.utc)
-    _runs[baseline.run_id] = (response, order, created_at)
-    _runs[optimized.run_id] = (response, order, created_at)
-    return response
+        try:
+            baseline = first_fit_decreasing(order, sheet)
+            optimized = maxrects_bssf(order, sheet)
+            if not baseline.validation.valid or not optimized.validation.valid:
+                logger.warning("Layout validation failed.")
+            improvements_valid = (
+                baseline.validation.valid
+                and optimized.validation.valid
+                and optimized.metrics.unplaced_parts <= baseline.metrics.unplaced_parts
+            )
+            comparison = Comparison(
+                sheet_count_difference=optimized.metrics.sheets_used
+                - baseline.metrics.sheets_used,
+                utilization_improvement_percentage_points=(
+                    optimized.metrics.utilization_percent - baseline.metrics.utilization_percent
+                    if improvements_valid
+                    else None
+                ),
+                estimated_unused_area_reduction=(
+                    baseline.metrics.unused_area - optimized.metrics.unused_area
+                    if improvements_valid
+                    else None
+                ),
+                estimated_material_cost_difference=(
+                    optimized.metrics.material_cost - baseline.metrics.material_cost
+                    if improvements_valid
+                    else None
+                ),
+                unplaced_part_difference=optimized.metrics.unplaced_parts
+                - baseline.metrics.unplaced_parts,
+                runtime_difference_ms=optimized.runtime_ms - baseline.runtime_ms,
+                improvements_valid=improvements_valid,
+            )
+            response = OptimizationResponse(
+                baseline=baseline,
+                optimized=optimized,
+                comparison=comparison,
+                risk_prediction=predict_risk(order, sheet),
+                synthetic_data_disclaimer=SYNTHETIC_DATA_DISCLAIMER,
+            )
+        except Exception as exc:
+            logger.exception("Optimization failed.")
+            raise HTTPException(
+                status_code=500, detail="Optimization could not be completed."
+            ) from exc
+        created_at = datetime.now(timezone.utc)
+        if current_user:
+            save_optimization_runs(response, order, current_user)
+        else:
+            _remember_runs(response, order, created_at)
+        return response
+    except SupabaseStorageError as exc:
+        logger.warning("Optimization persistence failed.")
+        raise HTTPException(
+            status_code=503,
+            detail="The optimization result could not be saved to your account.",
+        ) from exc
+    finally:
+        _optimization_capacity.release()
 
 
-def _get_run(run_id: str) -> tuple[OptimizationResponse, AlgorithmResult]:
+def _remember_runs(
+    response: OptimizationResponse, order: Order, created_at: datetime
+) -> None:
+    for result in (response.baseline, response.optimized):
+        _runs[result.run_id] = (response, order, created_at)
+        _runs.move_to_end(result.run_id)
+    while len(_runs) > MAX_DEMO_RUNS:
+        _runs.popitem(last=False)
+
+
+def _get_run(
+    run_id: str, current_user: AuthenticatedUser | None
+) -> tuple[OptimizationResponse, AlgorithmResult, Order]:
+    if current_user:
+        try:
+            record = get_owned_run(run_id, current_user)
+        except SupabaseStorageError as exc:
+            raise HTTPException(
+                status_code=503, detail="Could not retrieve the saved optimization result."
+            ) from exc
+        if record is None:
+            raise HTTPException(status_code=404, detail="Run not found.")
+        try:
+            report_payload = record["report_payload"]
+            result = AlgorithmResult.model_validate(record["payload"])
+            counterpart = AlgorithmResult.model_validate(report_payload["counterpart"])
+            baseline, optimized = (
+                (result, counterpart)
+                if result.algorithm == "first_fit_decreasing"
+                else (counterpart, result)
+            )
+            response = OptimizationResponse(
+                baseline=baseline,
+                optimized=optimized,
+                comparison=Comparison.model_validate(report_payload["comparison"]),
+                risk_prediction=RiskPrediction.model_validate(report_payload["risk_prediction"]),
+                synthetic_data_disclaimer=report_payload["synthetic_data_disclaimer"],
+            )
+            order = Order.model_validate(report_payload["input_order"])
+        except (KeyError, TypeError, ValidationError) as exc:
+            raise HTTPException(
+                status_code=503, detail="The saved optimization result is invalid."
+            ) from exc
+        return response, result, order
+
     stored = _runs.get(run_id)
     if stored is None:
         raise HTTPException(
-            status_code=404, detail="Run not found. Demo runs are not persisted across restarts."
+            status_code=404, detail="Run not found. Development demo runs are not durable."
         )
-    response, _, _ = stored
+    response, order, _ = stored
     result = response.baseline if response.baseline.run_id == run_id else response.optimized
-    return response, result
+    return response, result, order
 
 
 @app.get("/api/v1/optimize/{run_id}", response_model=AlgorithmResult, tags=["optimization"])
-def get_run(run_id: str) -> AlgorithmResult:
-    return _get_run(run_id)[1]
+def get_run(
+    run_id: str, current_user: AuthenticatedUser | None = Depends(get_current_user)
+) -> AlgorithmResult:
+    return _get_run(run_id, current_user)[1]
 
 
 @app.get("/api/v1/optimize/{run_id}/metrics", tags=["optimization"])
-def get_metrics(run_id: str) -> dict[str, Any]:
-    return _get_run(run_id)[1].metrics.model_dump()
+def get_metrics(
+    run_id: str, current_user: AuthenticatedUser | None = Depends(get_current_user)
+) -> dict[str, Any]:
+    return _get_run(run_id, current_user)[1].metrics.model_dump()
 
 
 @app.get("/api/v1/optimize/{run_id}/placements", tags=["optimization"])
-def get_placements(run_id: str) -> list[dict[str, Any]]:
-    return [placement.model_dump() for placement in _get_run(run_id)[1].placements]
+def get_placements(
+    run_id: str, current_user: AuthenticatedUser | None = Depends(get_current_user)
+) -> list[dict[str, Any]]:
+    return [
+        placement.model_dump()
+        for placement in _get_run(run_id, current_user)[1].placements
+    ]
 
 
 @app.get("/api/v1/history", tags=["history"])
-def optimization_history() -> list[dict[str, Any]]:
+def optimization_history(
+    current_user: AuthenticatedUser | None = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    if current_user:
+        try:
+            return [
+                {"created_at": row["created_at"], "result": row["payload"]}
+                for row in list_owned_runs(current_user)
+                if row.get("created_at") and isinstance(row.get("payload"), dict)
+            ]
+        except SupabaseStorageError as exc:
+            raise HTTPException(
+                status_code=503, detail="Could not retrieve optimization history."
+            ) from exc
     entries = {
         result.run_id: {"result": result, "created_at": created_at}
         for response, _, created_at in _runs.values()
@@ -259,17 +419,50 @@ def optimization_history() -> list[dict[str, Any]]:
     ]
 
 
-@app.get("/api/v1/analytics/overview", tags=["analytics"])
-def analytics_overview() -> dict[str, Any]:
-    results = [
-        result
-        for response, _, _ in _runs.values()
+def _analysis_entries(
+    current_user: AuthenticatedUser | None,
+) -> list[tuple[AlgorithmResult, datetime]]:
+    if current_user:
+        try:
+            rows = list_owned_runs(current_user)
+        except SupabaseStorageError as exc:
+            raise HTTPException(
+                status_code=503, detail="Could not retrieve analytics data."
+            ) from exc
+        entries = []
+        for row in rows:
+            try:
+                created_at = datetime.fromisoformat(str(row["created_at"]).replace("Z", "+00:00"))
+                result = AlgorithmResult.model_validate(row["payload"])
+            except (KeyError, TypeError, ValueError, ValidationError) as exc:
+                raise HTTPException(
+                    status_code=503, detail="Saved analytics data is invalid."
+                ) from exc
+            entries.append((result, created_at))
+        return entries
+    return [
+        (result, created_at)
+        for response, _, created_at in _runs.values()
         for result in (response.baseline, response.optimized)
     ]
-    unique = {result.run_id: result for result in results}.values()
-    values = list(unique)
+
+
+@app.get("/api/v1/analytics/overview", tags=["analytics"])
+def analytics_overview(
+    current_user: AuthenticatedUser | None = Depends(get_current_user),
+) -> dict[str, Any]:
+    values = list(
+        {
+            result.run_id: result
+            for result, _ in _analysis_entries(current_user)
+        }.values()
+    )
     return {
-        "mode": "in-memory demo; history is not durable",
+        "mode": (
+            "Supabase account history"
+            if current_user
+            else "development demo; history is in memory only"
+        ),
         "run_count": len(values),
         "sheets_used": sum(result.metrics.sheets_used for result in values),
         "requested_parts": sum(result.metrics.total_requested_parts for result in values),
@@ -291,14 +484,19 @@ def analytics_overview() -> dict[str, Any]:
 
 
 @app.get("/api/v1/analytics/trends", tags=["analytics"])
-def analytics_trends() -> dict[str, Any]:
+def analytics_trends(
+    current_user: AuthenticatedUser | None = Depends(get_current_user),
+) -> dict[str, Any]:
     entries = {
         result.run_id: (result, created_at)
-        for response, _, created_at in _runs.values()
-        for result in (response.baseline, response.optimized)
+        for result, created_at in _analysis_entries(current_user)
     }
     return {
-        "mode": "in-memory demo; trends are cleared on restart",
+        "mode": (
+            "Supabase account history"
+            if current_user
+            else "development demo; history is in memory only"
+        ),
         "data": [
             {
                 "date": created_at.date().isoformat(),
@@ -318,7 +516,11 @@ def analytics_trends() -> dict[str, Any]:
 
 
 @app.post("/api/v1/ml/predict-risk", response_model=RiskPrediction, tags=["machine-learning"])
-def risk_prediction(payload: OptimizationInput) -> dict[str, Any]:
+def risk_prediction(
+    payload: OptimizationInput,
+    current_user: AuthenticatedUser | None = Depends(get_current_user),
+) -> dict[str, Any]:
+    del current_user
     return predict_risk(payload.order, payload.sheet_config)
 
 
@@ -330,26 +532,35 @@ def risk_evaluation() -> dict[str, object]:
 @app.post("/api/v1/vision/detect", tags=["computer-vision"])
 async def vision_detect(
     file: UploadFile = File(...),
-    threshold: int = 180,
-    minimum_area: int = 400,
+    threshold: int = Query(default=180, ge=0, le=255),
+    minimum_area: int = Query(default=400, ge=1, le=MAX_IMAGE_PIXELS),
+    current_user: AuthenticatedUser | None = Depends(get_current_user),
 ) -> dict[str, object]:
+    del current_user
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=415, detail="Upload a supported image file.")
-    if not 0 <= threshold <= 255 or minimum_area < 1:
-        raise HTTPException(
-            status_code=422, detail="Threshold must be 0–255 and minimum_area must be positive."
-        )
     contents = await file.read(MAX_IMAGE_BYTES + 1)
     try:
-        return detect_rectangles(contents, threshold, minimum_area)
+        if not _vision_capacity.acquire(blocking=False):
+            raise HTTPException(
+                status_code=503,
+                detail="Image processing capacity is currently full; try again shortly.",
+            )
+        try:
+            return await run_in_threadpool(
+                detect_rectangles, contents, threshold, minimum_area
+            )
+        finally:
+            _vision_capacity.release()
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/v1/reports/{run_id}/json", tags=["reports"])
-def json_report(run_id: str) -> Response:
-    response, result = _get_run(run_id)
-    order = _runs[run_id][1]
+def json_report(
+    run_id: str, current_user: AuthenticatedUser | None = Depends(get_current_user)
+) -> Response:
+    response, result, order = _get_run(run_id, current_user)
     return Response(
         build_json_report(result, response, order),
         media_type="application/json",
@@ -358,8 +569,10 @@ def json_report(run_id: str) -> Response:
 
 
 @app.get("/api/v1/reports/{run_id}/placements.csv", tags=["reports"])
-def placements_report(run_id: str) -> PlainTextResponse:
-    _, result = _get_run(run_id)
+def placements_report(
+    run_id: str, current_user: AuthenticatedUser | None = Depends(get_current_user)
+) -> PlainTextResponse:
+    _, result, _ = _get_run(run_id, current_user)
     return PlainTextResponse(
         placements_csv(result),
         media_type="text/csv",

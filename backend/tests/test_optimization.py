@@ -4,7 +4,15 @@ from collections.abc import Callable
 import pytest
 from app.optimization.packing import first_fit_decreasing, maxrects_bssf
 from app.optimization.validation import validate_layout
-from app.schemas import AlgorithmResult, Order, Part, Placement, SheetConfig
+from app.schemas import (
+    MAX_ORDER_PART_INSTANCES,
+    AlgorithmResult,
+    OptimizationInput,
+    Order,
+    Part,
+    Placement,
+    SheetConfig,
+)
 
 
 def order(parts: list[Part]) -> Order:
@@ -54,13 +62,57 @@ def test_order_rejects_duplicate_ids_and_excessive_instance_counts() -> None:
                 Part(part_id="DUP", length=12, width=12, quantity=1),
             ]
         )
-    with pytest.raises(ValueError, match="100,000"):
+    with pytest.raises(ValueError, match=f"{MAX_ORDER_PART_INSTANCES:,}"):
         order(
             [
-                Part(part_id="LARGE", length=10, width=10, quantity=100_000),
+                Part(
+                    part_id="LARGE",
+                    length=10,
+                    width=10,
+                    quantity=MAX_ORDER_PART_INSTANCES,
+                ),
                 Part(part_id="EXTRA", length=10, width=10, quantity=1),
             ]
         )
+
+
+@pytest.mark.parametrize("algorithm", [first_fit_decreasing, maxrects_bssf])
+def test_incompatible_materials_are_rejected(algorithm: Callable) -> None:
+    production_order = order(
+        [
+            Part(part_id="MDF-PANEL", length=40, width=30, quantity=1, material="MDF"),
+            Part(part_id="PLY-PANEL", length=30, width=20, quantity=1, material="Plywood"),
+        ]
+    )
+    with pytest.raises(ValueError, match="Use one material per optimization"):
+        algorithm(production_order, sheet())
+    with pytest.raises(ValueError, match="do not match selected stock-sheet material"):
+        OptimizationInput(order=production_order, sheet_config=sheet())
+
+
+@pytest.mark.parametrize("algorithm", [first_fit_decreasing, maxrects_bssf])
+def test_matching_materials_are_case_insensitive_and_report_stock_material(
+    algorithm: Callable,
+) -> None:
+    production_order = order(
+        [
+            Part(part_id="A", length=70, width=40, quantity=1, material=" mDf "),
+        ]
+    )
+    stock = sheet(length=80, width=50)
+    result = algorithm(production_order, stock)
+    assert result.validation.valid
+    assert result.placements[0].rotated
+    assert result.sheet_config.material == "MDF"
+
+
+@pytest.mark.parametrize("algorithm", [first_fit_decreasing, maxrects_bssf])
+def test_missing_part_material_assumes_selected_sheet_material(algorithm: Callable) -> None:
+    production_order = order([Part(part_id="A", length=40, width=30, quantity=1)])
+    result = algorithm(production_order, sheet())
+    assert result.validation.valid
+    assert result.sheet_config.material == "MDF"
+    assert OptimizationInput(order=production_order, sheet_config=sheet())
 
 
 def test_spacing_is_reserved_between_parts() -> None:

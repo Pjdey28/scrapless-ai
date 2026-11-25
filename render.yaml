@@ -13,3 +13,7 @@ services:
         value: production
       - key: FRONTEND_ORIGIN
         sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
